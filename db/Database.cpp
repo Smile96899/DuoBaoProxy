@@ -1,4 +1,5 @@
 #include "Database.hpp"
+#include "ui/ThemeManager.hpp"
 
 #include "fmt/includes.h"
 
@@ -235,13 +236,13 @@ namespace NekoGui {
 
     QColor ProxyEntity::DisplayLatencyColor() const {
         if (latency < 0) {
-            return Qt::red;
+            return themeManager->IsDark() ? QColor("#E06C6C") : QColor("#C0392B"); // 不可用
         } else if (latency > 0) {
             auto greenMs = dataStore->test_latency_url.startsWith("https://") ? 200 : 100;
             if (latency < greenMs) {
-                return Qt::darkGreen;
+                return themeManager->IsDark() ? QColor("#5FBF8A") : QColor("#2E8B57"); // 低延迟
             } else {
-                return Qt::darkYellow;
+                return themeManager->IsDark() ? QColor("#E3B95F") : QColor("#B98A2E"); // 高延迟
             }
         } else {
             return {};

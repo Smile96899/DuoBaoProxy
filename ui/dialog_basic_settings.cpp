@@ -119,25 +119,12 @@ DialogBasicSettings::DialogBasicSettings(QWidget *parent)
         CACHE.needRestart = true;
     });
     //
-    int built_in_len = ui->theme->count();
-    ui->theme->addItems(QStyleFactory::keys());
-    //
-    bool ok;
-    auto themeId = NekoGui::dataStore->theme.toInt(&ok);
-    if (ok) {
-        ui->theme->setCurrentIndex(themeId);
-    } else {
-        ui->theme->setCurrentText(NekoGui::dataStore->theme);
-    }
-    //
+    // 主题：0 浅色，1 深色
+    ui->theme->setCurrentIndex(ThemeManager::Normalize(NekoGui::dataStore->theme).toInt());
     connect(ui->theme, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
-        if (index + 1 <= built_in_len) {
-            themeManager->ApplyTheme(Int2String(index));
-            NekoGui::dataStore->theme = Int2String(index);
-        } else {
-            themeManager->ApplyTheme(ui->theme->currentText());
-            NekoGui::dataStore->theme = ui->theme->currentText();
-        }
+        auto id = Int2String(index);
+        themeManager->ApplyTheme(id);
+        NekoGui::dataStore->theme = id;
         repaint();
         mainwindow->repaint();
         NekoGui::dataStore->Save();

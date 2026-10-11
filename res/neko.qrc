@@ -1,10 +1,20 @@
 <RCC>
     <qresource prefix="/">
-        <file>icon/h-dashboard.svg</file>
-        <file>icon/h-settings.svg</file>
-        <file>icon/h-nodes.svg</file>
-        <file>icon/h-support.svg</file>
-        <file>icon/h-version.svg</file>
+        <file>icon/h-check.svg</file>
+        <file>icon/h-chevron-down-light.svg</file>
+        <file>icon/dark/h-dashboard.svg</file>
+        <file>icon/dark/h-settings.svg</file>
+        <file>icon/dark/h-nodes.svg</file>
+        <file>icon/dark/h-support.svg</file>
+        <file>icon/dark/h-version.svg</file>
+        <file>icon/dark/h-theme.svg</file>
+        <file>icon/light/h-dashboard.svg</file>
+        <file>icon/light/h-settings.svg</file>
+        <file>icon/light/h-nodes.svg</file>
+        <file>icon/light/h-support.svg</file>
+        <file>icon/light/h-version.svg</file>
+        <file>icon/light/h-theme.svg</file>
+        <file>icon/h-chevron-down.svg</file>
         <file alias="icon/b-internet-web-browser.svg">icon/internet-web-browser.svg</file>
         <file alias="icon/b-system-run.svg">icon/system-run.svg</file>
         <file alias="icon/b-preferences.svg">icon/preferences.svg</file>
@@ -21,7 +31,8 @@
     </qresource>
     <qresource prefix="/neko">
         <file alias="h.png">public/h-logo.png</file>
-        <file>h-stone.css</file>
+        <file>h-dark.css</file>
+        <file>h-light.css</file>
         <file>vpn/vpn-run-root.sh</file>
         <file>vpn/sing-box-vpn.json</file>
         <file>dashboard-notice.html</file>

@@ -64,11 +64,25 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     // Setup misc UI
     themeManager->ApplyTheme(NekoGui::dataStore->theme);
     ui->setupUi(this);
-    ui->toolButton_program->setIcon(QIcon(":/icon/h-dashboard.svg"));
-    ui->toolButton_preferences->setIcon(QIcon(":/icon/h-settings.svg"));
-    ui->toolButton_server->setIcon(QIcon(":/icon/h-nodes.svg"));
-    ui->toolButton_ads->setIcon(QIcon(":/icon/h-support.svg"));
-    ui->toolButton_update->setIcon(QIcon(":/icon/h-version.svg"));
+    // 主题图标随浅色/深色切换
+    auto apply_theme_icons = [=](bool refreshList) {
+        ui->toolButton_program->setIcon(QIcon(themeManager->IconPath("h-dashboard")));
+        ui->toolButton_preferences->setIcon(QIcon(themeManager->IconPath("h-settings")));
+        ui->toolButton_server->setIcon(QIcon(themeManager->IconPath("h-nodes")));
+        ui->toolButton_ads->setIcon(QIcon(themeManager->IconPath("h-support")));
+        ui->toolButton_update->setIcon(QIcon(themeManager->IconPath("h-version")));
+        ui->toolButton_theme->setIcon(QIcon(themeManager->IconPath("h-theme")));
+        ui->toolButton_theme->setText(themeManager->IsDark() ? QStringLiteral("浅色") : QStringLiteral("深色"));
+        if (refreshList) refresh_proxy_list(-1); // 延迟颜色随主题变化
+    };
+    apply_theme_icons(false);
+    themeManager->on_theme_changed = [=] { apply_theme_icons(true); };
+    connect(ui->toolButton_theme, &QToolButton::clicked, this, [=] {
+        auto id = themeManager->IsDark() ? QStringLiteral("0") : QStringLiteral("1");
+        themeManager->ApplyTheme(id);
+        NekoGui::dataStore->theme = id;
+        NekoGui::dataStore->Save();
+    });
     ui->toolButton_ads->setText(QStringLiteral("在线支持"));
     //
     connect(ui->menu_start, &QAction::triggered, this, [=]() { neko_start(); });
@@ -120,7 +134,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(ui->toolButton_url_test, &QToolButton::clicked, this, [=] { speedtest_current_group(1, true); });
 
     // Setup log UI
-    ui->splitter->restoreState(DecodeB64IfValid(NekoGui::dataStore->splitter_state));
+    ui->splitter->setStretchFactor(0, 3);
+    ui->splitter->setStretchFactor(1, 2);
+    if (!ui->splitter->restoreState(DecodeB64IfValid(NekoGui::dataStore->splitter_state))) {
+        // 首次启动：节点列表约占 62%，日志区约占 38%
+        auto h = height() - 150;
+        if (h < 300) h = 300;
+        ui->splitter->setSizes({h * 62 / 100, h * 38 / 100});
+    }
     qvLogDocument->setUndoRedoEnabled(false);
     ui->masterLogBrowser->setUndoRedoEnabled(false);
     ui->masterLogBrowser->setDocument(qvLogDocument);
@@ -202,7 +223,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     ui->tableWidget_conn->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     ui->tableWidget_conn->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
     ui->tableWidget_conn->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
-    ui->proxyListTable->verticalHeader()->setDefaultSectionSize(24);
+    ui->proxyListTable->verticalHeader()->setDefaultSectionSize(32);
+    ui->tableWidget_conn->verticalHeader()->setDefaultSectionSize(30);
 
     // search box
     ui->search->setVisible(false);
