@@ -1,0 +1,148 @@
+syntax = "proto3";
+
+package libcore;
+option go_package = "hproxy/rpc/gen";
+
+// LibcoreService is the control channel between the h.proxy GUI and h_core.
+// One h_core process hosts every core; the GUI picks one with core_id.
+service LibcoreService {
+  rpc Exit(EmptyReq) returns (EmptyResp) {}
+
+  // Core discovery: which engines this build contains and what they support.
+  rpc ListCores(EmptyReq) returns (ListCoresResp) {}
+
+  rpc Start(LoadConfigReq) returns (ErrorResp) {}
+  rpc Stop(StopReq) returns (ErrorResp) {}
+  rpc Status(EmptyReq) returns (StatusResp) {}
+  rpc Test(TestReq) returns (TestResp) {}
+  rpc QueryStats(QueryStatsReq) returns (QueryStatsResp) {}
+
+  // Node model: import share links / subscriptions / clash yaml, export
+  // links, and render core-native config from nodes + settings.
+  rpc ImportNodes(ImportNodesReq) returns (ImportNodesResp) {}
+  rpc ShareLink(ShareLinkReq) returns (ShareLinkResp) {}
+  rpc RenderConfig(RenderConfigReq) returns (RenderConfigResp) {}
+}
+
+message EmptyReq {}
+
+message EmptyResp {}
+
+message ErrorResp {
+  string error = 1;
+}
+
+enum CoreKind {
+  Proxy = 0;      // local inbounds + routing (sing-box, xray)
+  SystemVPN = 1;  // replaces the system route, no routing (ikev2)
+}
+
+message CoreInfo {
+  string id = 1;                 // "sing-box" | "xray" | "ikev2"
+  string version = 2;
+  CoreKind kind = 3;
+  repeated string protocols = 4; // protocol ids this core can carry
+  bool running = 5;
+}
+
+message ListCoresResp {
+  repeated CoreInfo cores = 1;
+}
+
+message LoadConfigReq {
+  string core_config = 1;             // engine-native config (JSON)
+  bool enable_tracked_connections = 2; // reserved, unused
+  repeated string stats_outbounds = 3;
+  string core_id = 4;                 // empty = "sing-box"
+  string asset_dir = 5;               // geoip.dat / geosite.dat location (xray)
+}
+
+message StopReq {
+  string core_id = 1; // empty = stop whatever is running
+}
+
+message StatusResp {
+  string running_core_id = 1; // empty when nothing runs
+}
+
+enum TestMode {
+  TcpPing = 0;
+  UrlTest = 1;
+  FullTest = 2;
+}
+
+message TestReq {
+  TestMode mode = 1;
+  int32 timeout = 6;
+  // TcpPing
+  string address = 2;
+  // UrlTest: config.core_config != "" builds a throw-away instance of
+  // config.core_id, otherwise the running core is used.
+  LoadConfigReq config = 3;
+  string inbound = 4;
+  string url = 5;
+  // FullTest
+  string in_address = 7;
+  bool full_latency = 8;
+  bool full_speed = 9;
+  string full_speed_url = 13;
+  int32 full_speed_timeout = 14;
+  bool full_in_out = 10;
+  bool full_udp_latency = 12;
+  //
+  bool full_nat = 11 [deprecated = true];
+}
+
+message TestResp {
+  string error = 1;
+  int32 ms = 2;
+  string full_report = 3;
+}
+
+message QueryStatsReq {
+  string tag = 1;
+  string direct = 2; // "uplink" | "downlink"
+}
+
+message QueryStatsResp {
+  int64 traffic = 1;
+}
+
+message ImportNodesReq {
+  string text = 1; // links, base64 blob, or clash yaml
+}
+
+message ImportNodesResp {
+  repeated string nodes_json = 1; // one node.Node JSON document each
+  repeated string errors = 2;     // per-line failures, informational
+}
+
+message ShareLinkReq {
+  string node_json = 1;
+  bool hproxy_format = 2; // force the lossless hproxy:// form
+  bool v2rayn_vmess = 3;  // legacy base64 JSON form for vmess
+}
+
+message ShareLinkResp {
+  string link = 1;
+  string error = 2;
+}
+
+enum RenderMode {
+  Full = 0;
+  Test = 1;
+  Export = 2;
+}
+
+message RenderConfigReq {
+  string core_id = 1;
+  repeated string chain_json = 2; // nodes from client outwards; last = exit
+  string settings_json = 3;       // render.Settings
+  RenderMode mode = 4;
+}
+
+message RenderConfigResp {
+  string error = 1;
+  string config = 2;              // core-native config to pass to Start
+  repeated string stats_tags = 3; // outbound tags to pass as stats_outbounds
+}

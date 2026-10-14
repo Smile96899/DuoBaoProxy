@@ -11,6 +11,13 @@ import (
 	"time"
 )
 
+func appBinaryName() string {
+	if runtime.GOOS == "windows" {
+		return "h.exe"
+	}
+	return "h"
+}
+
 func main() {
 	// update & launcher
 	exe, err := os.Executable()
@@ -30,7 +37,7 @@ func main() {
 				time.Sleep(time.Second)
 				Updater()
 				// 3. start
-				exec.Command("./nekobox.exe").Start()
+				exec.Command(appBinaryName()).Start()
 			} else {
 				// 1. main prog quit and run "updater.exe"
 				Copy("./updater.exe", "./updater.old")
@@ -40,10 +47,10 @@ func main() {
 			// 1. update files
 			Updater()
 			// 2. start
-			if os.Getenv("NKR_FROM_LAUNCHER") == "1" {
+			if os.Getenv("H_FROM_LAUNCHER") == "1" {
 				Launcher()
 			} else {
-				exec.Command("./nekobox").Start()
+				exec.Command(appBinaryName()).Start()
 			}
 		}
 		return

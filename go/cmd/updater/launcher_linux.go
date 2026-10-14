@@ -17,7 +17,7 @@ func Launcher() {
 	_debug := flag.Bool("debug", false, "Debug mode")
 	flag.Parse()
 
-	cmd := exec.Command("./nekobox", flag.Args()...)
+	cmd := exec.Command(appBinaryName(), flag.Args()...)
 
 	ld_env := "LD_LIBRARY_PATH=" + filepath.Join(wd, "./usr/lib")
 	qt_plugin_env := "QT_PLUGIN_PATH=" + filepath.Join(wd, "./usr/plugins")
@@ -25,7 +25,7 @@ func Launcher() {
 	// Qt 5.12 abi is usually compatible with system Qt 5.15
 	// But use package Qt 5.12 by default.
 	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, "NKR_FROM_LAUNCHER=1")
+	cmd.Env = append(cmd.Env, "H_FROM_LAUNCHER=1")
 	cmd.Env = append(cmd.Env, ld_env, qt_plugin_env)
 	log.Println(ld_env, qt_plugin_env, cmd)
 
