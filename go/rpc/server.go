@@ -204,10 +204,99 @@ func (s *Server) Test(ctx context.Context, in *gen.TestReq) (*gen.TestResp, erro
 		})
 		out.Ms = r.LatencyMs
 		out.FullReport = r.Report
+	case gen.TestMode_Probe:
+		return s.runProbe(ctx, in, timeout), nil
 	default:
 		out.Error = "unknown test mode"
 	}
 	return out, nil
+}
+
+// runProbe answers TestMode_Probe: ms for latency-like checks, JSON in full_report.
+func (s *Server) runProbe(ctx context.Context, in *gen.TestReq, timeout time.Duration) *gen.TestResp {
+	out := &gen.TestResp{}
+	report := func(v any) {
+		b, _ := json.Marshal(v)
+		out.FullReport = string(b)
+	}
+	fail := func(err error) *gen.TestResp { out.Error = err.Error(); return out }
+
+	// Checks that talk to the server directly.
+	switch in.Probe {
+	case "icmp":
+		host, _, err := net.SplitHostPort(in.Address)
+		if err != nil {
+			host = in.Address
+		}
+		ms, err := probe.ICMPPing(ctx, host, timeout)
+		if err != nil {
+			return fail(err)
+		}
+		out.Ms = ms
+		return out
+	case "loss":
+		st := probe.TCPPingStats(ctx, in.Address, int(in.Count), timeout)
+		out.Ms = st.Avg
+		report(st)
+		return out
+	}
+
+	// The rest go through the node.
+	d, release, err := s.dialerFor(ctx, in.Config)
+	if err != nil {
+		return fail(err)
+	}
+	defer release()
+	switch in.Probe {
+	case "udp":
+		server, name := in.Address, in.Url
+		if server == "" {
+			server = "8.8.8.8:53"
+		}
+		if name == "" {
+			name = "www.google.com"
+		}
+		ms, err := probe.UDPLatencyTo(ctx, d, server, name, timeout)
+		if err != nil {
+			return fail(err)
+		}
+		out.Ms = max(ms, 1)
+	case "download":
+		bps, err := probe.DownloadSpeed(ctx, d, in.Url, timeout)
+		if err != nil {
+			return fail(err)
+		}
+		report(map[string]float64{"bps": bps})
+	case "upload":
+		size := int64(in.Count)
+		if size <= 0 {
+			size = 10
+		}
+		bps, err := probe.UploadSpeed(ctx, d, in.Url, size*1024*1024, timeout)
+		if err != nil {
+			return fail(err)
+		}
+		report(map[string]float64{"bps": bps})
+	case "geo":
+		g, err := probe.ExitGeo(ctx, d, in.Url, timeout)
+		if err != nil {
+			return fail(err)
+		}
+		report(g)
+	case "media":
+		report(probe.MediaUnlock(ctx, d, timeout, in.Url))
+	case "ai":
+		report(probe.AIUnlock(ctx, d, timeout, in.Url))
+	case "dnsleak":
+		r, err := probe.DNSLeakTest(ctx, d, timeout)
+		if err != nil {
+			return fail(err)
+		}
+		report(r)
+	default:
+		return fail(fmt.Errorf("unknown probe %q", in.Probe))
+	}
+	return out
 }
 
 func (s *Server) QueryStats(ctx context.Context, in *gen.QueryStatsReq) (*gen.QueryStatsResp, error) {

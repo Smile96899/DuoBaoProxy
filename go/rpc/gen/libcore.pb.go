@@ -73,6 +73,8 @@ const (
 	TestMode_TcpPing  TestMode = 0
 	TestMode_UrlTest  TestMode = 1
 	TestMode_FullTest TestMode = 2
+	// One named check (see probe field); the report is JSON.
+	TestMode_Probe TestMode = 3
 )
 
 // Enum value maps for TestMode.
@@ -81,11 +83,13 @@ var (
 		0: "TcpPing",
 		1: "UrlTest",
 		2: "FullTest",
+		3: "Probe",
 	}
 	TestMode_value = map[string]int32{
 		"TcpPing":  0,
 		"UrlTest":  1,
 		"FullTest": 2,
+		"Probe":    3,
 	}
 )
 
@@ -587,7 +591,11 @@ type TestReq struct {
 	//
 	//
 	// Deprecated: Marked as deprecated in libcore.proto.
-	FullNat       bool `protobuf:"varint,11,opt,name=full_nat,json=fullNat,proto3" json:"full_nat,omitempty"`
+	FullNat bool `protobuf:"varint,11,opt,name=full_nat,json=fullNat,proto3" json:"full_nat,omitempty"`
+	// Probe: icmp, loss (direct, use address); udp, download, upload, geo,
+	// media, ai, dnsleak (through config). url is the speed test endpoint.
+	Probe         string `protobuf:"bytes,15,opt,name=probe,proto3" json:"probe,omitempty"`
+	Count         int32  `protobuf:"varint,16,opt,name=count,proto3" json:"count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -719,6 +727,20 @@ func (x *TestReq) GetFullNat() bool {
 		return x.FullNat
 	}
 	return false
+}
+
+func (x *TestReq) GetProbe() string {
+	if x != nil {
+		return x.Probe
+	}
+	return ""
+}
+
+func (x *TestReq) GetCount() int32 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
 }
 
 type TestResp struct {
@@ -1242,7 +1264,7 @@ const file_libcore_proto_rawDesc = "" +
 	"\acore_id\x18\x01 \x01(\tR\x06coreId\"4\n" +
 	"\n" +
 	"StatusResp\x12&\n" +
-	"\x0frunning_core_id\x18\x01 \x01(\tR\rrunningCoreId\"\xde\x03\n" +
+	"\x0frunning_core_id\x18\x01 \x01(\tR\rrunningCoreId\"\x8a\x04\n" +
 	"\aTestReq\x12%\n" +
 	"\x04mode\x18\x01 \x01(\x0e2\x11.libcore.TestModeR\x04mode\x12\x18\n" +
 	"\atimeout\x18\x06 \x01(\x05R\atimeout\x12\x18\n" +
@@ -1260,7 +1282,9 @@ const file_libcore_proto_rawDesc = "" +
 	"\vfull_in_out\x18\n" +
 	" \x01(\bR\tfullInOut\x12(\n" +
 	"\x10full_udp_latency\x18\f \x01(\bR\x0efullUdpLatency\x12\x1d\n" +
-	"\bfull_nat\x18\v \x01(\bB\x02\x18\x01R\afullNat\"Q\n" +
+	"\bfull_nat\x18\v \x01(\bB\x02\x18\x01R\afullNat\x12\x14\n" +
+	"\x05probe\x18\x0f \x01(\tR\x05probe\x12\x14\n" +
+	"\x05count\x18\x10 \x01(\x05R\x05count\"Q\n" +
 	"\bTestResp\x12\x14\n" +
 	"\x05error\x18\x01 \x01(\tR\x05error\x12\x0e\n" +
 	"\x02ms\x18\x02 \x01(\x05R\x02ms\x12\x1f\n" +
@@ -1297,11 +1321,12 @@ const file_libcore_proto_rawDesc = "" +
 	"stats_tags\x18\x03 \x03(\tR\tstatsTags*$\n" +
 	"\bCoreKind\x12\t\n" +
 	"\x05Proxy\x10\x00\x12\r\n" +
-	"\tSystemVPN\x10\x01*2\n" +
+	"\tSystemVPN\x10\x01*=\n" +
 	"\bTestMode\x12\v\n" +
 	"\aTcpPing\x10\x00\x12\v\n" +
 	"\aUrlTest\x10\x01\x12\f\n" +
-	"\bFullTest\x10\x02*,\n" +
+	"\bFullTest\x10\x02\x12\t\n" +
+	"\x05Probe\x10\x03*,\n" +
 	"\n" +
 	"RenderMode\x12\b\n" +
 	"\x04Full\x10\x00\x12\b\n" +

@@ -4,7 +4,7 @@ Qt Quick 前端，通过 gRPC 驱动 `h_core`。
 
 ## 依赖
 
-- Qt 6.8 或更新，组件：Quick、QuickControls2、Widgets、Protobuf、Grpc、Svg、QuickEffects
+- Qt 6.8 或更新，组件：Quick、QuickControls2、Widgets、Protobuf、Grpc、Svg
 - CMake 3.21+、Ninja
 - Windows：Visual Studio 2022 Build Tools（MSVC v143）
 - macOS：Xcode 命令行工具

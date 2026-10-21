@@ -69,6 +69,8 @@ enum TestMode {
   TcpPing = 0;
   UrlTest = 1;
   FullTest = 2;
+  // One named check (see probe field); the report is JSON.
+  Probe = 3;
 }
 
 message TestReq {
@@ -91,6 +93,10 @@ message TestReq {
   bool full_udp_latency = 12;
   //
   bool full_nat = 11 [deprecated = true];
+  // Probe: icmp, loss (direct, use address); udp, download, upload, geo,
+  // media, ai, dnsleak (through config). url is the speed test endpoint.
+  string probe = 15;
+  int32 count = 16;
 }
 
 message TestResp {

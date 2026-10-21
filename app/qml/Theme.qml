@@ -26,6 +26,7 @@ QtObject {
     readonly property string mono: Qt.platform.os === "windows" ? "Cascadia Mono" : "Menlo"
     readonly property int radius: 8
 
+    function lookColor(look) { return look === "tun" ? bad : (look === "on" ? accent : fg3) }
     function latColor(ms) {
         if (ms === undefined || ms === null || ms === 0) return fg3
         if (ms < 0) return bad

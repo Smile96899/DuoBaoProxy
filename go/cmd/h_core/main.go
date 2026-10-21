@@ -4,6 +4,8 @@
 //
 //	h_core run -port 19810 -token <secret> [-debug]
 //	h_core version
+//	h_core qr <image.png>
+//	h_core qr-encode <dir>     (texts on stdin, one per line)
 package main
 
 import (
@@ -27,6 +29,12 @@ func main() {
 	core.Register(xray.New())
 	core.Register(ikev2.New())
 
+	if len(os.Args) == 3 && os.Args[1] == "qr" {
+		os.Exit(decodeQR(os.Args[2]))
+	}
+	if len(os.Args) == 3 && os.Args[1] == "qr-encode" {
+		os.Exit(encodeQR(os.Args[2]))
+	}
 	if len(os.Args) < 2 || os.Args[1] != "run" {
 		fmt.Println("h.proxy core", Version, runtime.GOOS+"/"+runtime.GOARCH)
 		for _, c := range core.List() {

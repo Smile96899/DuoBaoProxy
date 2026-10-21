@@ -1,25 +1,12 @@
 import QtQuick
-import QtQuick.Effects
 
-// The rabbit mark, tinted by state: grey idle, accent connected, red error.
-Item {
-    id: root
-    property bool on: false
-    property bool error: false
+// The rabbit logo; its circle shows the state: grey idle, green running, red running in TUN.
+Image {
+    property string look: "off"     // off | on | tun
     property int size: 28
     width: size; height: size
-
-    Image {
-        id: img
-        anchors.fill: parent
-        source: "qrc:/qt/qml/HProxy/res/mark.svg"
-        sourceSize: Qt.size(size * 2, size * 2)
-        visible: false
-    }
-    MultiEffect {
-        anchors.fill: img
-        source: img
-        colorization: 1
-        colorizationColor: root.error ? Theme.bad : (root.on ? Theme.accent : Theme.fg3)
-    }
+    source: "qrc:/qt/qml/HProxy/res/logo-" + look + ".png"
+    sourceSize: Qt.size(size * 2, size * 2)
+    fillMode: Image.PreserveAspectFit
+    smooth: true; mipmap: true
 }

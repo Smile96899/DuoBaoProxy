@@ -24,9 +24,12 @@ qt_add_executable(h WIN32 MACOSX_BUNDLE
     src/store.cpp src/store.h
     src/system.cpp src/system.h
 )
+if(WIN32)
+    target_sources(h PRIVATE res/app.rc) # exe icon
+endif()
 
 # Singletons must be flagged before the module is declared.
-set_source_files_properties(qml/Theme.qml qml/App.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
+set_source_files_properties(qml/Theme.qml qml/App.qml qml/Tests.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 
 qt_add_qml_module(h
     URI HProxy
@@ -35,6 +38,7 @@ qt_add_qml_module(h
         qml/Main.qml
         qml/Theme.qml
         qml/App.qml
+        qml/Tests.qml
         qml/Landscape.qml
         qml/Portrait.qml
         qml/components/Mark.qml
@@ -46,6 +50,13 @@ qt_add_qml_module(h
         qml/components/Field.qml
         qml/components/RuleBox.qml
         qml/components/ImportDialog.qml
+        qml/components/PillButton.qml
+        qml/components/PickPopup.qml
+        qml/components/Dropdown.qml
+        qml/components/PillMenu.qml
+        qml/components/QrDialog.qml
+        qml/components/CheckDot.qml
+        qml/components/NodeEditor.qml
         qml/pages/NodesPage.qml
         qml/pages/GroupsPage.qml
         qml/pages/RoutesPage.qml
@@ -53,8 +64,12 @@ qt_add_qml_module(h
         qml/pages/ConnsPage.qml
         qml/pages/LogsPage.qml
         qml/pages/SettingsPage.qml
+        qml/pages/TestSettings.qml
     RESOURCES
-        res/mark.svg
+        res/logo.png
+        res/logo-off.png
+        res/logo-on.png
+        res/logo-tun.png
 )
 
 target_link_libraries(h PRIVATE
@@ -65,7 +80,7 @@ target_compile_definitions(h PRIVATE HP_VERSION="${PROJECT_VERSION}")
 
 if(WIN32)
     set_target_properties(h PROPERTIES OUTPUT_NAME "h")
-    target_link_libraries(h PRIVATE wininet)
+    target_link_libraries(h PRIVATE wininet dwmapi)
 endif()
 
 install(TARGETS h RUNTIME DESTINATION . BUNDLE DESTINATION .)

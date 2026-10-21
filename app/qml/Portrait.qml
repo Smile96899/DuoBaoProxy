@@ -44,9 +44,9 @@ Item {
                     model: App.coreIsVpn
                         ? [{v: "nodes", l: "节点"}, {v: "groups", l: "分组"}, {v: "settings", l: "设置"}]
                         : [{v: "nodes", l: "节点"}, {v: "groups", l: "分组"}, {v: "routes", l: "路由"}, {v: "settings", l: "设置"}]
-                    Rectangle {
+                    Item {
                         Layout.fillWidth: true; Layout.fillHeight: true
-                        radius: 8; color: "transparent"
+                        Rectangle { anchors.centerIn: parent; width: 64; height: 32; radius: 16; color: root.tab === modelData.v ? Theme.panel2 : "transparent" }
                         Label { anchors.centerIn: parent; text: modelData.l; color: root.tab === modelData.v ? Theme.fg : Theme.fg3; font.pixelSize: 12; font.weight: root.tab === modelData.v ? Font.DemiBold : Font.Normal }
                         MouseArea { anchors.fill: parent; onClicked: root.tab = modelData.v }
                     }

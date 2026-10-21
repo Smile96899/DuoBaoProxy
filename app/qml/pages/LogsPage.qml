@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "../components"
 
 Item {
     id: root
@@ -12,8 +13,8 @@ Item {
             Layout.fillWidth: true; Layout.margins: 12; Layout.leftMargin: 18; Layout.rightMargin: 18; spacing: 10
             Label { text: "日志"; color: Theme.fg; font.pixelSize: 15; font.weight: Font.DemiBold }
             Item { Layout.fillWidth: true }
-            Button { text: "清空"; flat: true; onClicked: App.logs = [] }
-            Button { text: "复制"; onClicked: sys.copyText(App.logs.join("\n")) }
+            PillButton { text: "清空"; flat: true; onClicked: App.logs = [] }
+            PillButton { text: "复制"; onClicked: sys.copyText(App.logs.join("\n")) }
         }
         Rectangle { Layout.fillWidth: true; height: 1; color: Theme.line }
         Rectangle {

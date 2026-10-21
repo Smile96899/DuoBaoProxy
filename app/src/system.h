@@ -6,6 +6,8 @@
 #include <QObject>
 #include <QSystemTrayIcon>
 #include <QMenu>
+#include <QVariantList>
+#include <QWindow>
 
 class System : public QObject {
     Q_OBJECT
@@ -29,10 +31,22 @@ public:
     Q_INVOKABLE QString clipboardText() const;
     Q_INVOKABLE void openUrl(const QString &url);
     Q_INVOKABLE QString appDir() const;
+    // Windows draws the title bar itself; tell it to follow the app theme.
+    Q_INVOKABLE void setDarkTitleBar(QWindow *window, bool dark);
 
     // Tray
     void setupTray(QObject *window);
     Q_INVOKABLE void setTrayState(bool connected, const QString &tooltip);
+    // Tints the rabbit: "off" grey, "on" green, "tun" red.
+    Q_INVOKABLE void setTrayLook(const QString &look);
+    Q_INVOKABLE void notify(const QString &title, const QString &text);
+    // What the right-click menu offers. nodes: [{id, name, group, lat, ok}]
+    Q_INVOKABLE void setTrayModel(const QVariantList &nodes, int selected, const QString &mode, bool hasTun);
+
+    // Grabs every screen and decodes QR codes with h_core; answers via qrScanned.
+    Q_INVOKABLE void scanScreenQr();
+    // QR images for the given texts, made by h_core; answers via qrImagesReady (file URLs, in order).
+    Q_INVOKABLE void makeQrImages(const QStringList &texts);
 
 signals:
     void systemProxyChanged();
@@ -40,10 +54,22 @@ signals:
     void trayToggleRequested();
     void trayShowRequested();
     void trayQuitRequested();
+    void trayNodePicked(int id);
+    void trayModePicked(const QString &mode);
+    void trayImportClipboardRequested();
+    void trayScanRequested();
+    void qrScanned(const QString &text, const QString &error);
+    void qrImagesReady(const QStringList &urls, const QString &error);
 
 private:
     bool m_systemProxy = false;
     QSystemTrayIcon *m_tray = nullptr;
     QMenu *m_menu = nullptr;
-    QAction *m_toggleAction = nullptr;
+    bool m_connected = false;
+    QString m_qrDir;            // last batch of share QR images, removed on the next
+    QVariantList m_nodes;
+    int m_selected = -1;
+    QString m_mode;
+    bool m_hasTun = false;
+    void rebuildTrayMenus();
 };

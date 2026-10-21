@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Window
+import "components"
 
 ApplicationWindow {
     id: win
@@ -8,22 +9,25 @@ ApplicationWindow {
     title: sys.platformName
     visible: !startInTray
     color: Theme.panel
-    // Fit the screen at any DPI scale: never wider than the work area.
-    readonly property int landW: Math.min(1180, Screen.desktopAvailableWidth - 60)
-    readonly property int landH: Math.min(720, Screen.desktopAvailableHeight - 80)
-    minimumWidth: landscape ? 900 : 360
-    minimumHeight: landscape ? 560 : 640
-    width: landscape ? landW : 390
-    height: landscape ? landH : Math.min(760, Screen.desktopAvailableHeight - 80)
+    // Every launch, and every layout switch, starts at the layout's minimum size.
+    readonly property int minW: landscape ? 900 : 360
+    readonly property int minH: landscape ? 560 : 640
+    minimumWidth: minW
+    minimumHeight: minH
+    width: minW
+    height: minH
     font.family: Theme.font
     font.pixelSize: 14
 
-    Component.onCompleted: Theme.mode = store.ui.theme || "system"
+    Component.onCompleted: { Theme.mode = store.ui.theme || "system"; sys.setDarkTitleBar(win, Theme.dark) }
+    // The title bar follows the theme too, including "follow system" changes.
+    Connections { target: Theme; function onDarkChanged() { sys.setDarkTitleBar(win, Theme.dark) } }
 
     // Keep the chosen layout across restarts; resize when the user switches.
+    // Set the minimum first so a smaller layout is not held at the old one.
     onLandscapeChanged: {
-        width = landscape ? landW : 390
-        height = landscape ? landH : Math.min(760, Screen.desktopAvailableHeight - 80)
+        minimumWidth = minW; minimumHeight = minH
+        width = minW; height = minH
     }
 
     Loader {
@@ -31,6 +35,8 @@ ApplicationWindow {
         sourceComponent: win.landscape ? landscapeComp : portraitComp
     }
     Component { id: landscapeComp; Landscape {} }
+    QrDialog { id: qrDialog; items: App.qrItems }
+    Connections { target: App; function onQrItemsChanged() { if (App.qrItems.length) qrDialog.open() } }
     Component { id: portraitComp; Portrait {} }
 
     // Closing hides to the tray; "退出" in the tray menu really quits.

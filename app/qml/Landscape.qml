@@ -34,8 +34,9 @@ Item {
                     anchors.leftMargin: 18; anchors.rightMargin: 18
                     spacing: 14
                     Toggle { on: App.connected; enabled: !App.busy; onClicked: App.toggle() }
-                    Rectangle { width: 8; height: 8; radius: 4; color: App.connected ? Theme.accent : Theme.fg3 }
-                    Label { text: App.statusText; color: Theme.fg; font.weight: Font.Medium }
+                    Rectangle { width: 8; height: 8; radius: 4; color: Theme.lookColor(App.look) }
+                    Label { id: statusLbl; text: App.statusText; color: Theme.fg; font.weight: Font.Medium; elide: Text.ElideRight; Layout.fillWidth: true; Layout.maximumWidth: Math.ceil(statusFull.advanceWidth) + 2; Layout.minimumWidth: 40
+                        TextMetrics { id: statusFull; text: statusLbl.text; font: statusLbl.font } }
                     Rectangle {
                         radius: 999; color: Theme.panel2; height: 22; Layout.preferredWidth: pill.implicitWidth + 16
                         Label { id: pill; anchors.centerIn: parent; text: App.coreId + " " + App.coreInfo.version; color: Theme.fg2; font.pixelSize: 11; font.family: Theme.mono }
@@ -70,7 +71,6 @@ Item {
                         switch (root.nav) {
                         case "groups": return groupsPage
                         case "routes": return routesPage
-                        case "apps": return appsPage
                         case "conns": return connsPage
                         case "logs": return logsPage
                         case "settings": return settingsPage
@@ -82,70 +82,109 @@ Item {
 
                 // Detail column
                 Rectangle {
-                    width: 300
+                    Layout.preferredWidth: root.width >= 1100 ? 300 : 260
                     Layout.fillHeight: true
                     color: Theme.panel
-                    Flickable {
+                    // Compact facts on top; the log takes whatever height is left.
+                    ColumnLayout {
+                        id: detail
                         anchors.fill: parent
                         anchors.margins: 16
-                        contentHeight: detail.implicitHeight
-                        clip: true
-                        ColumnLayout {
-                            id: detail
-                            width: parent.width
-                            spacing: 18
-                            Label { text: "当前节点"; color: Theme.fg3; font.pixelSize: 11; font.capitalization: Font.AllUppercase; font.letterSpacing: 1 }
-                            Label { text: App.nodeName(App.selectedNode); color: Theme.fg; font.pixelSize: 15; font.weight: Font.DemiBold; elide: Text.ElideRight; Layout.fillWidth: true }
-                            RowLayout {
-                                visible: App.selectedNode !== null
-                                spacing: 8
-                                Rectangle { radius: 4; color: Theme.panel2; height: 18; Layout.preferredWidth: pt.implicitWidth + 12
-                                    Label { id: pt; anchors.centerIn: parent; text: App.selectedNode ? App.selectedNode.protocol : ""; color: Theme.fg2; font.pixelSize: 11; font.family: Theme.mono } }
-                                Label { text: Theme.latText(App.selected.lat); color: Theme.latColor(App.selected.lat); font.family: Theme.mono; font.pixelSize: 12 }
-                                Label { visible: !App.supports(App.selectedNode); text: App.coreId + " 不支持"; color: Theme.bad; font.pixelSize: 11 }
+                        spacing: 10
+                        Label { text: "当前节点"; color: Theme.fg3; font.pixelSize: 11; font.capitalization: Font.AllUppercase; font.letterSpacing: 1 }
+                        Label { text: App.nodeName(App.selectedNode); color: Theme.fg; font.pixelSize: 15; font.weight: Font.DemiBold; elide: Text.ElideRight; Layout.fillWidth: true }
+                        RowLayout {
+                            visible: App.selectedNode !== null
+                            spacing: 8
+                            Rectangle { radius: 4; color: Theme.panel2; height: 18; Layout.preferredWidth: pt.implicitWidth + 12
+                                Label { id: pt; anchors.centerIn: parent; text: App.selectedNode ? App.selectedNode.protocol : ""; color: Theme.fg2; font.pixelSize: 11; font.family: Theme.mono } }
+                            Label { text: Theme.latText(App.selected.lat); color: Theme.latColor(App.selected.lat); font.family: Theme.mono; font.pixelSize: 12 }
+                            Label { visible: !App.supports(App.selectedNode); text: App.coreId + " 不支持"; color: Theme.bad; font.pixelSize: 11 }
+                        }
+                        GridLayout {
+                            columns: 2; columnSpacing: 8; rowSpacing: 8
+                            Layout.fillWidth: true
+                            Repeater {
+                                model: [
+                                    {l: "下行", v: Theme.bytes(App.downRate) + "/s"},
+                                    {l: "上行", v: Theme.bytes(App.upRate) + "/s"},
+                                    {l: "本次下载", v: Theme.bytes(App.downTotal)},
+                                    {l: "本次上传", v: Theme.bytes(App.upTotal)},
+                                ]
+                                Rectangle {
+                                    Layout.fillWidth: true; Layout.preferredWidth: 1; implicitHeight: 40; radius: Theme.radius; color: Theme.panel2
+                                    Column { anchors.fill: parent; anchors.leftMargin: 10; anchors.rightMargin: 8; anchors.topMargin: 5; spacing: 1
+                                        Label { text: modelData.l; color: Theme.fg3; font.pixelSize: 10 }
+                                        Label { text: modelData.v; width: parent.width; color: Theme.fg; font.pixelSize: 13; fontSizeMode: Text.HorizontalFit; minimumPixelSize: 10; font.family: Theme.mono; font.weight: Font.Medium }
+                                    }
+                                }
                             }
-                            GridLayout {
-                                columns: 2; columnSpacing: 10; rowSpacing: 10
-                                Layout.fillWidth: true
+                        }
+                        GridLayout {
+                            visible: App.selectedNode !== null
+                            columns: 2; columnSpacing: 14; rowSpacing: 4
+                            Layout.fillWidth: true
+                            Label { text: "地址"; color: Theme.fg3; font.pixelSize: 12 }
+                            Label { text: App.selectedNode ? App.selectedNode.server + ":" + App.selectedNode.port : ""; color: Theme.fg; font.family: Theme.mono; font.pixelSize: 12; elide: Text.ElideMiddle; Layout.fillWidth: true }
+                            Label { text: "分组"; color: Theme.fg3; font.pixelSize: 12 }
+                            Label { text: App.selected.group || ""; color: Theme.fg; font.pixelSize: 12; elide: Text.ElideRight; Layout.fillWidth: true }
+                            Label { text: "内核"; color: Theme.fg3; font.pixelSize: 12 }
+                            Label { text: App.coreId; color: Theme.fg; font.family: Theme.mono; font.pixelSize: 12 }
+                        }
+                        // Every test result kept for the current node; scrolls when long.
+                        Label {
+                            visible: resultsView.visible
+                            text: "测试结果"; color: Theme.fg3; font.pixelSize: 11; Layout.topMargin: 4
+                        }
+                        Flickable {
+                            id: resultsView
+                            readonly property var shown: Tests.kinds.filter(k => Tests.result(App.selected, k.k) || Tests.isRunning(App.selectedId, k.k))
+                            visible: App.selectedNode !== null && shown.length > 0
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Math.min(resultsCol.implicitHeight, 180)
+                            contentHeight: resultsCol.implicitHeight
+                            clip: true
+                            ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+                            ColumnLayout {
+                                id: resultsCol
+                                width: parent.width
+                                spacing: 4
                                 Repeater {
-                                    model: [
-                                        {l: "下行", v: Theme.bytes(App.downRate) + "/s"},
-                                        {l: "上行", v: Theme.bytes(App.upRate) + "/s"},
-                                        {l: "本次下载", v: Theme.bytes(App.downTotal)},
-                                        {l: "本次上传", v: Theme.bytes(App.upTotal)},
-                                    ]
-                                    Rectangle {
-                                        Layout.fillWidth: true; height: 58; radius: Theme.radius; color: Theme.panel2
-                                        Column { anchors.fill: parent; anchors.margins: 10; spacing: 2
-                                            Label { text: modelData.l; color: Theme.fg3; font.pixelSize: 11; font.capitalization: Font.AllUppercase; font.letterSpacing: 1 }
-                                            Label { text: modelData.v; color: Theme.fg; font.pixelSize: 18; font.family: Theme.mono; font.weight: Font.Medium }
+                                    model: resultsView.shown
+                                    RowLayout {
+                                        Layout.fillWidth: true; spacing: 8
+                                        readonly property var c: Tests.cell(App.selected, modelData.k)
+                                        Label { text: modelData.s; color: Theme.fg3; font.pixelSize: 12; Layout.preferredWidth: 44; Layout.alignment: Qt.AlignTop }
+                                        Label {
+                                            Layout.fillWidth: true
+                                            text: Tests.isRunning(App.selectedId, modelData.k) ? "测试中…" : Tests.detail(App.selected, modelData.k)
+                                            color: Tests.isRunning(App.selectedId, modelData.k) ? Theme.fg3 : (parent.c ? parent.c.color : Theme.fg)
+                                            font.pixelSize: 12; wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                                         }
                                     }
                                 }
                             }
-                            GridLayout {
-                                visible: App.selectedNode !== null
-                                columns: 2; columnSpacing: 14; rowSpacing: 6
-                                Label { text: "地址"; color: Theme.fg3; font.pixelSize: 12 }
-                                Label { text: App.selectedNode ? App.selectedNode.server + ":" + App.selectedNode.port : ""; color: Theme.fg; font.family: Theme.mono; font.pixelSize: 12; elide: Text.ElideMiddle; Layout.fillWidth: true }
-                                Label { text: "分组"; color: Theme.fg3; font.pixelSize: 12 }
-                                Label { text: App.selected.group || ""; color: Theme.fg; font.pixelSize: 12 }
-                                Label { text: "内核"; color: Theme.fg3; font.pixelSize: 12 }
-                                Label { text: App.coreId; color: Theme.fg; font.family: Theme.mono; font.pixelSize: 12 }
-                            }
-                            Flow {
-                                visible: App.selectedNode !== null
-                                spacing: 8; Layout.fillWidth: true
-                                Button { text: "测速"; onClicked: App.testNode(App.selectedId) }
-                                Button { text: "复制链接"; onClicked: core.shareLink(store.nodeJson(App.selectedId), false) }
-                                Button { text: "删除"; flat: true; onClicked: { var id = App.selectedId; App.selectedId = -1; store.setUi("selected", -1); store.removeNode(id) } }
-                            }
-                            Label { text: "最近日志"; color: Theme.fg3; font.pixelSize: 11; font.capitalization: Font.AllUppercase; font.letterSpacing: 1 }
-                            Rectangle {
-                                Layout.fillWidth: true; radius: Theme.radius; color: Theme.bg
-                                implicitHeight: logText.implicitHeight + 20
-                                Label { id: logText; anchors.fill: parent; anchors.margins: 10; wrapMode: Text.Wrap
-                                    text: App.logs.slice(-4).join("\n"); color: Theme.fg2; font.family: Theme.mono; font.pixelSize: 11 }
+                        }
+                        Label { text: "最近日志"; color: Theme.fg3; font.pixelSize: 11; font.capitalization: Font.AllUppercase; font.letterSpacing: 1; Layout.topMargin: 4 }
+                        Rectangle {
+                            Layout.fillWidth: true; Layout.fillHeight: true; Layout.minimumHeight: 80
+                            radius: Theme.radius; color: Theme.bg
+                            ListView {
+                                id: logList
+                                anchors.fill: parent; anchors.margins: 10
+                                clip: true
+                                spacing: 4
+                                model: App.logs.slice(-200)
+                                onCountChanged: Qt.callLater(positionViewAtEnd)
+                                Component.onCompleted: positionViewAtEnd()
+                                ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+                                delegate: Label {
+                                    width: logList.width
+                                    text: modelData
+                                    wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+                                    color: /error|fatal|failed|timeout/i.test(modelData) ? Theme.bad : (/warn/i.test(modelData) ? Theme.warn : Theme.fg2)
+                                    font.family: Theme.mono; font.pixelSize: 11
+                                }
                             }
                         }
                     }
@@ -157,13 +196,7 @@ Item {
     Component { id: nodesPage; NodesPage {} }
     Component { id: groupsPage; GroupsPage {} }
     Component { id: routesPage; RoutesPage {} }
-    Component { id: appsPage; AppsPage {} }
     Component { id: connsPage; ConnsPage {} }
     Component { id: logsPage; LogsPage {} }
     Component { id: settingsPage; SettingsPage {} }
-
-    Connections {
-        target: core
-        function onLinkReady(link, error) { if (error === "") sys.copyText(link); App.log(error === "" ? "已复制链接" : error) }
-    }
 }

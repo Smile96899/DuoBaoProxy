@@ -593,10 +593,13 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 		}
 		rules = append(rules, render.Obj{"protocol": []any{"dns"}, "action": "hijack-dns"})
 		rules = append(rules, custom...)
+		// Order decides who wins: blocking first (ads stay blocked for every
+		// app), then per-app choices, then the proxy / direct lists.
 		appendRule(&rules, withOut(rb.domainRule(render.ParseDomainRules(set.Routing.BlockDomain)), "block"))
+		appendRule(&rules, withOut(rb.ipRule(render.ParseIPRules(set.Routing.BlockIP)), "block"))
+		rules = append(rules, appRules(set.Apps)...)
 		appendRule(&rules, withOut(rb.domainRule(render.ParseDomainRules(set.Routing.ProxyDomain)), "proxy"))
 		appendRule(&rules, withOut(rb.domainRule(render.ParseDomainRules(set.Routing.DirectDomain)), "bypass"))
-		appendRule(&rules, withOut(rb.ipRule(render.ParseIPRules(set.Routing.BlockIP)), "block"))
 		appendRule(&rules, withOut(rb.ipRule(render.ParseIPRules(set.Routing.ProxyIP)), "proxy"))
 		appendRule(&rules, withOut(rb.ipRule(render.ParseIPRules(set.Routing.DirectIP)), "bypass"))
 		rules = append(rules,
@@ -605,37 +608,6 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 			render.Obj{"source_ip_cidr": []any{"224.0.0.0/3", "ff00::/8"}, "action": "reject"},
 		)
 		if tun {
-			// Per-app rules go first so they beat the generic domain/IP rules.
-			byOut := map[string][]string{}
-			var order []string
-			for _, a := range set.Apps {
-				p := strings.TrimSpace(a.Process)
-				if p == "" {
-					continue
-				}
-				if _, seen := byOut[a.Outbound]; !seen {
-					order = append(order, a.Outbound)
-				}
-				byOut[a.Outbound] = append(byOut[a.Outbound], p)
-			}
-			var appRules []any
-			for _, out := range order {
-				var names, paths []string
-				for _, p := range byOut[out] {
-					if strings.ContainsAny(p, `/\`) {
-						paths = append(paths, p)
-					} else {
-						names = append(names, p)
-					}
-				}
-				if len(names) > 0 {
-					appendRule(&appRules, withOut(render.Obj{"process_name": render.Strings(names)}, out))
-				}
-				if len(paths) > 0 {
-					appendRule(&appRules, withOut(render.Obj{"process_path": render.Strings(paths)}, out))
-				}
-			}
-			rules = append(appRules, rules...)
 			matchOut := "bypass"
 			if set.TUN.RuleWhite {
 				matchOut = "proxy"
@@ -692,6 +664,43 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 		return nil, err
 	}
 	return &render.Result{Config: b, StatsTags: statsTags}, nil
+}
+
+// appRules turns the per-app list into process rules, one per outbound.
+// sing-box knows the process for TUN traffic and for local connections to
+// the mixed inbound, so these also work in system-proxy mode (for programs
+// that use the system proxy).
+func appRules(apps []render.AppRule) []any {
+	byOut := map[string][]string{}
+	var order []string
+	for _, a := range apps {
+		p := strings.TrimSpace(a.Process)
+		if p == "" {
+			continue
+		}
+		if _, seen := byOut[a.Outbound]; !seen {
+			order = append(order, a.Outbound)
+		}
+		byOut[a.Outbound] = append(byOut[a.Outbound], p)
+	}
+	var rules []any
+	for _, out := range order {
+		var names, paths []string
+		for _, p := range byOut[out] {
+			if strings.ContainsAny(p, `/\`) {
+				paths = append(paths, p)
+			} else {
+				names = append(names, p)
+			}
+		}
+		if len(names) > 0 {
+			appendRule(&rules, withOut(render.Obj{"process_name": render.Strings(names)}, out))
+		}
+		if len(paths) > 0 {
+			appendRule(&rules, withOut(render.Obj{"process_path": render.Strings(paths)}, out))
+		}
+	}
+	return rules
 }
 
 func withServer(rule render.Obj, server string) render.Obj {

@@ -5,7 +5,6 @@ package probe
 import (
 	"context"
 	"crypto/tls"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -71,6 +70,21 @@ func TCPPing(ctx context.Context, addr string, timeout time.Duration) (int32, er
 // UDPLatency sends one DNS query for www.google.com to 8.8.8.8 through d
 // and measures the time until the first reply byte.
 func UDPLatency(ctx context.Context, d core.Dialer, timeout time.Duration) (int32, error) {
+	return UDPLatencyTo(ctx, d, "8.8.8.8:53", "www.google.com", timeout)
+}
+
+// dnsQuery is a minimal DNS request for name's A record.
+func dnsQuery(name string) []byte {
+	q := []byte{0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0}
+	for _, label := range strings.Split(strings.TrimSuffix(name, "."), ".") {
+		q = append(q, byte(len(label)))
+		q = append(q, label...)
+	}
+	return append(q, 0, 0, 1, 0, 1)
+}
+
+// UDPLatencyTo asks server (host:port) for name through d.
+func UDPLatencyTo(ctx context.Context, d core.Dialer, server, name string, timeout time.Duration) (int32, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	pc, err := d.ListenPacket(ctx)
@@ -79,8 +93,11 @@ func UDPLatency(ctx context.Context, d core.Dialer, timeout time.Duration) (int3
 	}
 	defer pc.Close()
 	_ = pc.SetDeadline(time.Now().Add(timeout))
-	query, _ := hex.DecodeString("0000010000010000000000000377777706676f6f676c6503636f6d0000010001")
-	dst := &net.UDPAddr{IP: net.IPv4(8, 8, 8, 8), Port: 53}
+	dst, err := net.ResolveUDPAddr("udp", server)
+	if err != nil {
+		return 0, err
+	}
+	query := dnsQuery(name)
 	start := time.Now()
 	if _, err = pc.WriteTo(query, dst); err != nil {
 		return 0, err

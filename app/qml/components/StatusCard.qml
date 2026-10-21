@@ -5,7 +5,6 @@ import QtQuick.Layouts
 // Portrait status card: core picker, switch, node name, three big numbers.
 Rectangle {
     id: root
-    property bool coresOpen: false
     radius: 12
     color: App.connected ? Theme.accentSoft : Theme.panel2
     implicitHeight: col.implicitHeight + 32
@@ -19,24 +18,11 @@ Rectangle {
 
         RowLayout {
             spacing: 10
-            Mark { size: 28; on: App.connected; error: App.selectedNode !== null && !App.supports(App.selectedNode) }
-            Rectangle {
-                radius: 999; color: Theme.panel; height: 26
-                implicitWidth: coreRow.implicitWidth + 4
-                Row {
-                    id: coreRow
-                    anchors.centerIn: parent
-                    Repeater {
-                        model: root.coresOpen ? App.cores : [App.coreInfo]
-                        Rectangle {
-                            radius: 999; height: 22; width: cl.implicitWidth + 18
-                            color: root.coresOpen && modelData.id === App.coreId ? Theme.fg : "transparent"
-                            Label { id: cl; anchors.centerIn: parent; text: modelData.id + (root.coresOpen ? "" : " ▾"); font.family: Theme.mono; font.pixelSize: 11
-                                color: root.coresOpen && modelData.id === App.coreId ? Theme.bg : Theme.fg2 }
-                            MouseArea { anchors.fill: parent; onClicked: { if (root.coresOpen) { App.setCore(modelData.id); root.coresOpen = false } else root.coresOpen = true } }
-                        }
-                    }
-                }
+            Mark { size: 28; look: App.look }
+            Dropdown {
+                model: App.cores.map(c => ({v: c.id, l: c.id + (c.version ? "  " + c.version : "")}))
+                current: App.coreId
+                onPicked: v => App.setCore(v)
             }
             Item { Layout.fillWidth: true }
             Toggle { on: App.connected; enabled: !App.busy; onClicked: App.toggle() }
@@ -44,19 +30,20 @@ Rectangle {
 
         Label { text: App.nodeName(App.selectedNode); color: Theme.fg; font.pixelSize: 17; font.weight: Font.DemiBold; elide: Text.ElideRight; Layout.fillWidth: true }
 
+        // The three numbers share the width and shrink to fit a narrow window.
         RowLayout {
-            spacing: 18
-            Column { spacing: 4
-                Label { text: App.statusText; color: App.connected ? Theme.accent : Theme.fg2; font.pixelSize: 11; font.letterSpacing: 1 }
-                Label { text: App.connected ? Theme.latText(App.latency) : "—"; color: App.connected ? Theme.latColor(App.latency) : Theme.fg3; font.family: Theme.mono; font.pixelSize: 26; font.weight: Font.Medium }
+            spacing: 14
+            ColumnLayout { spacing: 4; Layout.fillWidth: true; Layout.preferredWidth: 1
+                Label { text: App.statusText; color: App.connected ? Theme.accent : Theme.fg2; font.pixelSize: 11; font.letterSpacing: 1; elide: Text.ElideRight; Layout.fillWidth: true }
+                Label { text: App.connected ? Theme.latText(App.latency) : "—"; color: App.connected ? Theme.latColor(App.latency) : Theme.fg3; font.family: Theme.mono; font.pixelSize: 26; fontSizeMode: Text.HorizontalFit; minimumPixelSize: 12; font.weight: Font.Medium; Layout.fillWidth: true }
             }
-            Column { spacing: 4
+            ColumnLayout { spacing: 4; Layout.fillWidth: true; Layout.preferredWidth: 1
                 Label { text: "↓ 下行"; color: Theme.fg2; font.pixelSize: 11; font.letterSpacing: 1 }
-                Label { text: Theme.bytes(App.downRate) + "/s"; color: Theme.fg; font.family: Theme.mono; font.pixelSize: 20; font.weight: Font.Medium }
+                Label { text: Theme.bytes(App.downRate) + "/s"; color: Theme.fg; font.family: Theme.mono; font.pixelSize: 20; fontSizeMode: Text.HorizontalFit; minimumPixelSize: 11; font.weight: Font.Medium; Layout.fillWidth: true }
             }
-            Column { spacing: 4
+            ColumnLayout { spacing: 4; Layout.fillWidth: true; Layout.preferredWidth: 1
                 Label { text: "↑ 上行"; color: Theme.fg2; font.pixelSize: 11; font.letterSpacing: 1 }
-                Label { text: Theme.bytes(App.upRate) + "/s"; color: Theme.fg; font.family: Theme.mono; font.pixelSize: 20; font.weight: Font.Medium }
+                Label { text: Theme.bytes(App.upRate) + "/s"; color: Theme.fg; font.family: Theme.mono; font.pixelSize: 20; fontSizeMode: Text.HorizontalFit; minimumPixelSize: 11; font.weight: Font.Medium; Layout.fillWidth: true }
             }
         }
     }

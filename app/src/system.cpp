@@ -3,9 +3,15 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QCoreApplication>
+#include <QDateTime>
 #include <QDesktopServices>
 #include <QDir>
 #include <QIcon>
+#include <QActionGroup>
+#include <QFile>
+#include <QPainter>
+#include <QScreen>
+#include <QStandardPaths>
 #include <QProcess>
 #include <QSettings>
 #include <QUrl>
@@ -13,6 +19,7 @@
 #ifdef Q_OS_WIN
 #include <windows.h>
 #include <wininet.h>
+#include <dwmapi.h>
 #endif
 
 System::System(QObject *parent) : QObject(parent) {}
@@ -28,6 +35,21 @@ QString System::platformName() const {
 }
 
 QString System::appDir() const { return QCoreApplication::applicationDirPath(); }
+
+void System::setDarkTitleBar(QWindow *window, bool dark) {
+#ifdef Q_OS_WIN
+    if (!window) return;
+    const BOOL on = dark;
+    // DWMWA_USE_IMMERSIVE_DARK_MODE: 20 on Windows 10 20H1+ and 11, 19 on older 10 builds.
+    const HWND hwnd = reinterpret_cast<HWND>(window->winId());
+    if (FAILED(DwmSetWindowAttribute(hwnd, 20, &on, sizeof(on))))
+        DwmSetWindowAttribute(hwnd, 19, &on, sizeof(on));
+    // Repaint the frame now rather than on the next activation.
+    SetWindowPos(hwnd, nullptr, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+#else
+    Q_UNUSED(window) Q_UNUSED(dark)
+#endif
+}
 
 bool System::isAdmin() const {
 #ifdef Q_OS_WIN
@@ -167,24 +189,161 @@ void System::openUrl(const QString &url) { QDesktopServices::openUrl(QUrl(url));
 
 // ---- tray -----------------------------------------------------------------
 
+// The logo with its circle in the state colour: off grey, on green, tun red.
+static QIcon logoIcon(const QString &look) {
+    return QIcon(QStringLiteral(":/qt/qml/HProxy/res/logo-%1.png").arg(look));
+}
+
 void System::setupTray(QObject *) {
     if (!QSystemTrayIcon::isSystemTrayAvailable()) return;
-    m_menu = new QMenu();
-    m_toggleAction = m_menu->addAction(QStringLiteral("连接"), this, [this] { emit trayToggleRequested(); });
-    m_menu->addAction(QStringLiteral("显示窗口"), this, [this] { emit trayShowRequested(); });
-    m_menu->addSeparator();
-    m_menu->addAction(QStringLiteral("退出"), this, [this] { emit trayQuitRequested(); });
-    m_tray = new QSystemTrayIcon(QIcon(":/qt/qml/HProxy/res/mark.svg"), this);
-    m_tray->setContextMenu(m_menu);
+    m_tray = new QSystemTrayIcon(logoIcon("off"), this);
     m_tray->setToolTip(platformName());
     connect(m_tray, &QSystemTrayIcon::activated, this, [this](QSystemTrayIcon::ActivationReason r) {
         if (r == QSystemTrayIcon::Trigger || r == QSystemTrayIcon::DoubleClick) emit trayShowRequested();
     });
+    rebuildTrayMenus();
     m_tray->show();
 }
 
 void System::setTrayState(bool connected, const QString &tooltip) {
     if (!m_tray) return;
     m_tray->setToolTip(tooltip);
-    if (m_toggleAction) m_toggleAction->setText(connected ? QStringLiteral("断开") : QStringLiteral("连接"));
+    if (m_connected == connected) return;
+    m_connected = connected;
+    rebuildTrayMenus();
+}
+
+void System::setTrayLook(const QString &look) {
+    if (!m_tray) return;
+    m_tray->setIcon(logoIcon(look == "tun" || look == "on" ? look : QStringLiteral("off")));
+}
+
+void System::notify(const QString &title, const QString &text) {
+    if (m_tray) m_tray->showMessage(title, text, QIcon(QStringLiteral(":/qt/qml/HProxy/res/logo.png")), 3000);
+}
+
+void System::setTrayModel(const QVariantList &nodes, int selected, const QString &mode, bool hasTun) {
+    m_nodes = nodes;
+    m_selected = selected;
+    m_mode = mode;
+    m_hasTun = hasTun;
+    rebuildTrayMenus();
+}
+
+// Builds a fresh menu and swaps it in. Editing a menu the tray already holds
+// (clear + add submenus) overflows the stack inside qwindows on Qt 6.8.
+void System::rebuildTrayMenus() {
+    if (!m_tray) return;
+    auto *menu = new QMenu();
+    menu->addAction(m_connected ? QStringLiteral("停止") : QStringLiteral("启动"), this, [this] { emit trayToggleRequested(); });
+
+    QMenu *modeMenu = menu->addMenu(QStringLiteral("启动方式"));
+    auto *modes = new QActionGroup(modeMenu);
+    QList<QPair<QString, QString>> modeList{{"system", QStringLiteral("系统代理")}};
+    if (m_hasTun) modeList.append({"tun", QStringLiteral("TUN")});
+    for (const auto &[v, label] : modeList) {
+        QAction *a = modeMenu->addAction(label, this, [this, v] { emit trayModePicked(v); });
+        a->setCheckable(true);
+        a->setChecked(m_mode == v);
+        modes->addAction(a);
+    }
+
+    // One submenu per group (flat when there is only one), nodes top to bottom.
+    QMenu *nodeMenu = menu->addMenu(QStringLiteral("选择节点"));
+    auto *picks = new QActionGroup(nodeMenu);
+    QMap<QString, QMenu *> groups;
+    QStringList order;
+    for (const QVariant &v : m_nodes) {
+        const QString g = v.toMap().value("group").toString();
+        if (!groups.contains(g)) { groups[g] = nullptr; order << g; }
+    }
+    for (const QString &g : order) groups[g] = order.size() == 1 ? nodeMenu : nodeMenu->addMenu(g);
+    for (const QVariant &v : m_nodes) {
+        const QVariantMap n = v.toMap();
+        const int id = n.value("id").toInt();
+        const int lat = n.value("lat").toInt();
+        QString label = n.value("name").toString();
+        if (lat > 0) label += QStringLiteral("\t%1 ms").arg(lat);
+        else if (lat < 0) label += QStringLiteral("\t超时");
+        QAction *a = groups[n.value("group").toString()]->addAction(label, this, [this, id] { emit trayNodePicked(id); });
+        a->setCheckable(true);
+        a->setChecked(id == m_selected);
+        a->setEnabled(n.value("ok").toBool());
+        picks->addAction(a);
+    }
+    if (m_nodes.isEmpty()) nodeMenu->addAction(QStringLiteral("还没有节点"))->setEnabled(false);
+
+    QMenu *importMenu = menu->addMenu(QStringLiteral("导入"));
+    importMenu->addAction(QStringLiteral("从剪贴板导入"), this, [this] { emit trayImportClipboardRequested(); });
+    importMenu->addAction(QStringLiteral("扫描屏幕上的二维码"), this, [this] { emit trayScanRequested(); });
+    menu->addSeparator();
+    menu->addAction(QStringLiteral("显示窗口"), this, [this] { emit trayShowRequested(); });
+    menu->addSeparator();
+    menu->addAction(QStringLiteral("退出"), this, [this] { emit trayQuitRequested(); });
+
+    m_tray->setContextMenu(menu);
+    if (m_menu) m_menu->deleteLater();
+    m_menu = menu;
+}
+
+// ---- QR -------------------------------------------------------------------
+
+void System::scanScreenQr() {
+    // Every screen side by side in one image.
+    QList<QPixmap> shots;
+    int w = 0, h = 0;
+    for (QScreen *s : QGuiApplication::screens()) {
+        QPixmap p = s->grabWindow(0);
+        w += p.width();
+        h = qMax(h, p.height());
+        shots << p;
+    }
+    if (shots.isEmpty() || w == 0) { emit qrScanned({}, QStringLiteral("截屏失败")); return; }
+    QImage all(w, h, QImage::Format_RGB32);
+    all.fill(Qt::white);
+    QPainter painter(&all);
+    int x = 0;
+    for (const QPixmap &p : shots) { painter.drawPixmap(x, 0, p); x += p.width(); }
+    painter.end();
+
+    const QString file = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation)).filePath("hproxy-qr.png");
+    if (!all.save(file)) { emit qrScanned({}, QStringLiteral("截屏失败")); return; }
+
+    auto *proc = new QProcess(this);
+    connect(proc, &QProcess::finished, this, [this, proc, file](int code, QProcess::ExitStatus) {
+        const QString out = QString::fromUtf8(proc->readAllStandardOutput()).trimmed();
+        QFile::remove(file);
+        proc->deleteLater();
+        if (code == 0 && !out.isEmpty()) emit qrScanned(out, {});
+        else emit qrScanned({}, code == 2 ? QStringLiteral("屏幕上没有找到二维码") : QStringLiteral("二维码识别失败"));
+    });
+#ifdef Q_OS_WIN
+    proc->start(appDir() + "/h_core.exe", {"qr", file});
+#else
+    proc->start(appDir() + "/h_core", {"qr", file});
+#endif
+}
+
+void System::makeQrImages(const QStringList &texts) {
+    if (!m_qrDir.isEmpty()) QDir(m_qrDir).removeRecursively();
+    m_qrDir = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
+                  .filePath(QStringLiteral("hproxy-share-%1").arg(QDateTime::currentMSecsSinceEpoch()));
+    QDir().mkpath(m_qrDir);
+
+    auto *proc = new QProcess(this);
+    connect(proc, &QProcess::finished, this, [this, proc](int code, QProcess::ExitStatus) {
+        const QStringList paths = QString::fromUtf8(proc->readAllStandardOutput()).split('\n', Qt::SkipEmptyParts);
+        const QString err = QString::fromUtf8(proc->readAllStandardError()).trimmed();
+        proc->deleteLater();
+        QStringList urls;
+        for (const QString &p : paths) urls << QUrl::fromLocalFile(p.trimmed()).toString();
+        emit qrImagesReady(urls, code == 0 ? QString() : QStringLiteral("二维码生成失败：%1").arg(err));
+    });
+#ifdef Q_OS_WIN
+    proc->start(appDir() + "/h_core.exe", {"qr-encode", m_qrDir});
+#else
+    proc->start(appDir() + "/h_core", {"qr-encode", m_qrDir});
+#endif
+    proc->write(texts.join('\n').toUtf8() + '\n');
+    proc->closeWriteChannel();
 }

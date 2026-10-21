@@ -199,6 +199,27 @@ void CoreClient::tcpPing(int requestId, const QString &address, int timeoutMs) {
     });
 }
 
+void CoreClient::probe(int requestId, const QString &name, const QString &coreId, const QString &config,
+                       const QString &address, const QString &url, int count, int timeoutMs) {
+    REQUIRE_CLIENT(emit probed(requestId, 0, {}, "core not ready"))
+    TestReq req;
+    req.setMode(TestModeGadget::TestMode::Probe);
+    req.setProbe(name);
+    req.setAddress(address);
+    req.setUrl(url);
+    req.setCount(count);
+    req.setTimeout(timeoutMs);
+    if (!config.isEmpty()) {
+        LoadConfigReq cfg;
+        cfg.setCoreId(coreId);
+        cfg.setCoreConfig(config);
+        req.setConfig(cfg);
+    }
+    await<TestResp>(m_client->Test(req), this, [this, requestId](const TestResp &r, const QString &err) {
+        emit probed(requestId, r.ms(), r.fullReport(), err.isEmpty() ? r.error() : err);
+    });
+}
+
 void CoreClient::importNodes(const QString &text) {
     REQUIRE_CLIENT(emit imported({}, {"core not ready"}))
     ImportNodesReq req;

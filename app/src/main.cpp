@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
     app.setOrganizationName("h.proxy");
     app.setApplicationVersion(HP_VERSION);
     app.setQuitOnLastWindowClosed(false);
-    app.setWindowIcon(QIcon(":/qt/qml/HProxy/res/mark.svg"));
+    app.setWindowIcon(QIcon(":/qt/qml/HProxy/res/logo.png"));
     QQuickStyle::setStyle("Basic");
 
     Store store;

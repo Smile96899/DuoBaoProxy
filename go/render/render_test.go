@@ -194,3 +194,31 @@ func TestRenderXray(t *testing.T) {
 	}
 	loadXray(t, res.Config)
 }
+
+// Per-app rules sit after blocking and before the proxy / direct lists, and
+// are written in system-proxy mode as well as TUN.
+func TestAppRulesOrder(t *testing.T) {
+	n, _ := node.ParseLink(links[1])
+	for _, tun := range []bool{false, true} {
+		s := settings()
+		s.TUN.Enabled = tun
+		s.Apps = []render.AppRule{{Name: "curl", Process: "curl.exe", Outbound: "bypass"}}
+		res, err := singbox.New().Render(render.Request{Chain: []*node.Node{n}, Settings: s, Mode: render.ModeFull})
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Only the route section: the DNS rules mention the same domains earlier.
+		cfg := string(res.Config)
+		cfg = cfg[strings.Index(cfg, `"route": {`):]
+		block := strings.Index(cfg, `"ads"`)
+		app := strings.Index(cfg, `"curl.exe"`)
+		proxy := strings.Index(cfg, `"example.org"`)
+		if app < 0 || block < 0 || proxy < 0 || !(block < app && app < proxy) {
+			t.Fatalf("tun=%v: block %d, app %d, proxy %d\n%s", tun, block, app, proxy, cfg)
+		}
+		if hijack := strings.Index(cfg, `"hijack-dns"`); hijack < 0 || hijack > app {
+			t.Fatalf("tun=%v: app rule before hijack-dns", tun)
+		}
+		loadSingBox(t, res.Config)
+	}
+}

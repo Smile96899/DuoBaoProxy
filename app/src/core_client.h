@@ -37,6 +37,10 @@ public:
     // UrlTest through a throw-away instance of coreId built from config.
     Q_INVOKABLE void urlTest(int requestId, const QString &coreId, const QString &config, const QString &url, int timeoutMs);
     Q_INVOKABLE void tcpPing(int requestId, const QString &address, int timeoutMs);
+    // One named check (icmp, loss, udp, download, upload, geo, media, ai, dnsleak);
+    // answers via probed with a JSON report.
+    Q_INVOKABLE void probe(int requestId, const QString &name, const QString &coreId, const QString &config,
+                           const QString &address, const QString &url, int count, int timeoutMs);
     Q_INVOKABLE void importNodes(const QString &text);
     Q_INVOKABLE void shareLink(const QString &nodeJson, bool hproxyFormat);
     Q_INVOKABLE void renderConfig(int requestId, const QString &coreId, const QStringList &chainJson, const QString &settingsJson, int mode);
@@ -52,6 +56,7 @@ signals:
     void started(const QString &error);
     void stopped(const QString &error);
     void tested(int requestId, int ms, const QString &error);
+    void probed(int requestId, int ms, const QString &report, const QString &error);
     void imported(const QStringList &nodesJson, const QStringList &errors);
     void linkReady(const QString &link, const QString &error);
     void rendered(int requestId, const QString &config, const QStringList &statsTags, const QString &error);

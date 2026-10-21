@@ -19,7 +19,7 @@ Item {
             Layout.fillWidth: true; Layout.fillHeight: true
             Label {
                 anchors.centerIn: parent
-                width: parent.width - 80
+                width: Math.max(0, parent.width - 48)
                 horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap
                 color: Theme.fg3; font.pixelSize: 13
                 text: App.coreId === "xray" ? "xray 内核不提供连接列表。切换到 sing-box 查看。"
