@@ -24,7 +24,6 @@ Popup {
         width: parent.width
         spacing: 12
         Label { text: "导入节点"; color: Theme.fg; font.pixelSize: 15; font.weight: Font.DemiBold }
-        Label { text: "粘贴分享链接、订阅内容或 Clash 配置，一行一个。格式自动识别。"; color: Theme.fg2; font.pixelSize: 12; wrapMode: Text.Wrap; Layout.fillWidth: true }
         Rectangle {
             Layout.fillWidth: true; implicitHeight: 180
             radius: 16; color: Theme.bg; border.width: 1; border.color: Theme.line

@@ -51,11 +51,10 @@ Item {
         }
         Rectangle { visible: !compact && !root.embedded; Layout.fillWidth: true; height: 1; color: Theme.line }
         Label {
-            visible: !root.supported || !root.tunOn
+            visible: !root.supported
             Layout.fillWidth: true; Layout.margins: 12; Layout.topMargin: 0; Layout.leftMargin: compact ? 0 : 18; Layout.rightMargin: compact ? 0 : 18
-            text: !root.supported ? App.coreId + " 内核不支持应用分流，切换到 sing-box 后生效。"
-                : "当前是系统代理模式：只对会走系统代理的程序生效（浏览器等）。要让所有程序都按这里分流，请用 TUN 模式。"
-            color: !root.supported ? Theme.bad : Theme.fg3; font.pixelSize: 12; wrapMode: Text.Wrap
+            text: App.coreId + " 内核不支持应用分流，切换到 sing-box 后生效。"
+            color: Theme.bad; font.pixelSize: 12; wrapMode: Text.Wrap
         }
         ListView {
             Layout.fillWidth: true; Layout.fillHeight: true; clip: true

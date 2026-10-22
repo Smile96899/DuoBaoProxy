@@ -192,7 +192,6 @@ Popup {
         Label { visible: root.error !== ""; text: root.error; color: Theme.bad; font.pixelSize: 12; wrapMode: Text.Wrap; Layout.fillWidth: true }
         RowLayout {
             Layout.fillWidth: true
-            Label { text: "保存后需重新测速"; color: Theme.fg3; font.pixelSize: 12 }
             Item { Layout.fillWidth: true }
             PillButton { text: "取消"; flat: true; onClicked: root.close() }
             PillButton { text: "保存"; highlighted: true; onClicked: root.save() }

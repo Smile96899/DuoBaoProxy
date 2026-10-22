@@ -33,21 +33,21 @@ Item {
             Label { text: "设置"; color: Theme.fg; font.pixelSize: 15; font.weight: Font.DemiBold; Layout.bottomMargin: 4 }
 
             Section { text: "界面" }
-            Field { Layout.fillWidth: true; title: "布局"; detail: "横屏适合桌面，竖屏适合贴边或迷你窗口。Ctrl+L 快速切换"
+            Field { Layout.fillWidth: true; title: "布局"
                 Seg { model: [{v: "landscape", l: "横屏"}, {v: "portrait", l: "竖屏"}]; current: store.ui.layout || "landscape"; onPicked: v => App.setLayout(v) } }
             Field { Layout.fillWidth: true; title: "主题"
                 Seg { model: [{v: "system", l: "跟随系统"}, {v: "light", l: "浅色"}, {v: "dark", l: "深色"}]; current: store.ui.theme || "system"; onPicked: v => { store.setUi("theme", v); Theme.mode = v } } }
-            Field { Layout.fillWidth: true; title: "开机自启"; detail: "登录后最小化到托盘"
+            Field { Layout.fillWidth: true; title: "开机自启"
                 Toggle { on: sys.autoStart; onClicked: sys.autoStart = !sys.autoStart } }
 
             Section { text: "连接" }
-            Field { Layout.fillWidth: true; title: "模式"; detail: App.coreIsVpn ? "系统 VPN，由操作系统接管" : (App.coreHasTun ? "系统代理只影响读取代理设置的程序，TUN 接管全部流量" : "当前内核没有 TUN")
+            Field { Layout.fillWidth: true; title: "模式"
                 Seg { visible: !App.coreIsVpn; model: App.coreHasTun ? [{v: "system", l: "系统代理"}, {v: "tun", l: "TUN"}] : [{v: "system", l: "系统代理"}]; current: store.ui.mode || "system"; onPicked: v => { store.setUi("mode", v); App.reconnect() } } }
-            Field { Layout.fillWidth: true; title: "分流方式"; detail: "规则分流按域名 / IP 名单，应用分流按程序；同时生效时先拦截、再看应用、最后看名单"
+            Field { Layout.fillWidth: true; title: "分流方式"
                 Seg { model: [{v: "rules", l: "规则分流"}, {v: "apps", l: "应用分流"}, {v: "both", l: "同时生效"}]; current: App.routeParts; onPicked: v => App.setRouteParts(v) } }
-            Field { Layout.fillWidth: true; title: "本地端口"; detail: "socks 与 http 共用"
+            Field { Layout.fillWidth: true; title: "本地端口"
                 Input { width: 90; text: inbound.port || 2080; font.family: Theme.mono; validator: IntValidator { bottom: 1; top: 65535 } onEditingFinished: store.setSetting("inbound.port", Number(text)) } }
-            Field { Layout.fillWidth: true; title: "允许局域网"; detail: "监听 0.0.0.0，建议同时设置用户名密码"
+            Field { Layout.fillWidth: true; title: "允许局域网"
                 Toggle { on: inbound.address === "0.0.0.0"; onClicked: store.setSetting("inbound.address", on ? "127.0.0.1" : "0.0.0.0") } }
 
             Section { text: "测试" }
@@ -62,7 +62,6 @@ Item {
                     anchors.rightMargin: 28
                     spacing: 2
                     Label { text: "测试设置"; color: Theme.fg; font.weight: Font.Medium }
-                    Label { text: "每种测试的目标网址、服务器、次数和超时"; color: Theme.fg2; font.pixelSize: 12; elide: Text.ElideRight; Layout.fillWidth: true }
                 }
                 Label { anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter; text: "›"; color: Theme.fg3; font.pixelSize: 18 }
                 Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.line }
@@ -72,9 +71,9 @@ Item {
             Section { text: "TUN"; visible: App.coreHasTun }
             Field { visible: App.coreHasTun; Layout.fillWidth: true; title: "协议栈"
                 Seg { model: [{v: "gvisor", l: "gvisor"}, {v: "system", l: "system"}, {v: "mixed", l: "mixed"}]; current: tun.stack || "gvisor"; onPicked: v => store.setSetting("tun.stack", v) } }
-            Field { visible: App.coreHasTun; Layout.fillWidth: true; title: "严格路由 / Kill Switch"; detail: "代理断开时阻止流量直连，仅 TUN 模式有效"
+            Field { visible: App.coreHasTun; Layout.fillWidth: true; title: "严格路由 / Kill Switch"
                 Toggle { on: tun.strict_route === true; onClicked: store.setSetting("tun.strict_route", !on) } }
-            Field { visible: App.coreHasTun; Layout.fillWidth: true; title: "FakeIP"; detail: "TUN 下加速 DNS，部分应用不兼容"
+            Field { visible: App.coreHasTun; Layout.fillWidth: true; title: "FakeIP"
                 Toggle { on: tun.fake_dns === true; onClicked: store.setSetting("tun.fake_dns", !on) } }
             Field { visible: App.coreHasTun; Layout.fillWidth: true; title: "IPv6"
                 Toggle { on: tun.ipv6 === true; onClicked: store.setSetting("tun.ipv6", !on) } }

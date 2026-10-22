@@ -30,7 +30,6 @@ Item {
                     onClicked: root.kind === "" ? root.back() : root.kind = "" }
             }
             Label { text: root.kind === "" ? "测试设置" : root.info.l; color: Theme.fg; font.pixelSize: 15; font.weight: Font.DemiBold; Layout.topMargin: 8 }
-            Label { visible: root.kind !== ""; text: root.info.d || ""; color: Theme.fg2; font.pixelSize: 12; wrapMode: Text.Wrap; Layout.fillWidth: true; Layout.topMargin: 4; Layout.bottomMargin: 6 }
 
             // ---- list of tests ----
             Repeater {
@@ -46,7 +45,6 @@ Item {
                         anchors.leftMargin: 10; anchors.rightMargin: 10
                         spacing: 2
                         Label { text: modelData.l; color: Theme.fg; font.weight: Font.Medium }
-                        Label { text: modelData.d; color: Theme.fg2; font.pixelSize: 12; wrapMode: Text.Wrap; Layout.fillWidth: true }
                     }
                     Label { id: arrow; anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter; text: "›"; color: Theme.fg3; font.pixelSize: 18 }
                     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.line }
@@ -61,7 +59,6 @@ Item {
                     id: fieldRow
                     Layout.fillWidth: true
                     title: modelData.l
-                    detail: modelData.h || ""
                     readonly property var value: { store.ui.tests; store.ui.test_url; return Tests.opt(root.kind, modelData.f) }
 
                     Input {

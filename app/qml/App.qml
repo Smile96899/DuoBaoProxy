@@ -21,6 +21,7 @@ QtObject {
     property var statsTags: []
     property var pendingTests: ({})
     property int nextReq: 1
+    property string appliedSettings: ""          // settings JSON the running core was started with
 
     readonly property var coreInfo: cores.find(c => c.id === coreId) || {id: coreId, kind: "proxy", protocols: [], version: ""}
     readonly property bool coreHasTun: coreId === "sing-box"
@@ -101,6 +102,7 @@ QtObject {
         statusText = "正在连接…"
         var req = nextReq++
         pendingTests[req] = {kind: "start"}
+        appliedSettings = store.settingsJson()
         core.renderConfig(req, coreId, [store.nodeJson(selectedId)], JSON.stringify(renderSettings()), 0)
     }
     function disconnect() {
@@ -191,6 +193,24 @@ QtObject {
     }
 
     // ---- wiring -----------------------------------------------------------
+    // Settings edits (app rules, rule lists, DNS, TUN…) restart the core so
+    // they take effect; debounced so a burst of edits reconnects once.
+    property Connections storeConn: Connections {
+        target: store
+        function onSettingsChanged() { if (app.connected) app.applyTimer.restart() }
+    }
+    property Timer applyTimer: Timer {
+        interval: 800
+        onTriggered: if (app.connected && store.settingsJson() !== app.appliedSettings) app.reconnect()
+    }
+
+    // Re-test the connected node so the detail column shows a live latency.
+    property Timer latencyTimer: Timer {
+        interval: 5000; repeat: true
+        running: app.connected && !app.coreIsVpn
+        onTriggered: Tests.run([app.selectedId], ["url"], true)
+    }
+
     property Connections coreConn: Connections {
         target: core
         function onReadyChanged() {

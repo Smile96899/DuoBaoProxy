@@ -249,7 +249,6 @@ Item {
         ColumnLayout {
             width: parent.width; spacing: 16
             Label { text: "删除 " + root.menuIds.length + " 个节点？"; color: Theme.fg; font.pixelSize: 15; font.weight: Font.DemiBold }
-            Label { text: "删除后无法恢复。"; color: Theme.fg2; font.pixelSize: 12 }
             RowLayout {
                 Item { Layout.fillWidth: true }
                 PillButton { text: "取消"; flat: true; onClicked: confirmDelete.close() }
@@ -350,7 +349,7 @@ Item {
             visible: root.pickedIds.length > 0 || root.pickedGroupNames.length > 0
             Layout.fillWidth: true; Layout.leftMargin: 18; Layout.rightMargin: 18; Layout.topMargin: 8
             spacing: 10
-            Label { text: (root.pickedGroupNames.length ? "已选 " + root.pickedGroupNames.length + " 个分组" : "已选 " + root.pickedIds.length + " 个节点") + "，单击继续选择，右键批量操作"; color: Theme.fg2; font.pixelSize: 12; elide: Text.ElideRight; Layout.fillWidth: true }
+            Label { text: (root.pickedGroupNames.length ? "已选 " + root.pickedGroupNames.length + " 个分组" : "已选 " + root.pickedIds.length + " 个节点"); color: Theme.fg2; font.pixelSize: 12; elide: Text.ElideRight; Layout.fillWidth: true }
             PillButton { text: "取消选择"; flat: true; onClicked: { root.clearPicked(); root.clearPickedGroups() } }
         }
 

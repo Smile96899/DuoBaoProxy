@@ -47,7 +47,6 @@ Rectangle {
             model: {
                 var items = [{v: "nodes", l: "节点"}, {v: "groups", l: "分组"}]
                 if (!App.coreIsVpn) items.push({v: "routes", l: "路由"})
-                if (!App.coreIsVpn) items.push({v: "conns", l: "连接"})
                 items.push({v: "logs", l: "日志"})
                 return items
             }
