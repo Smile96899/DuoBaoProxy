@@ -7,7 +7,7 @@ import "pages"
 // Landscape: rail | main (topbar + page) | detail column.
 Item {
     id: root
-    property string nav: "nodes"
+    readonly property string nav: App.page
 
     RowLayout {
         anchors.fill: parent
@@ -16,7 +16,7 @@ Item {
         Rail {
             Layout.fillHeight: true
             nav: root.nav
-            onNavigate: n => root.nav = n
+            onNavigate: n => App.page = n
         }
 
         ColumnLayout {
@@ -142,7 +142,7 @@ Item {
                                     width: logList.width
                                     text: modelData
                                     wrapMode: Text.WrapAtWordBoundaryOrAnywhere
-                                    color: /error|fatal|failed|timeout/i.test(modelData) ? Theme.bad : (/warn/i.test(modelData) ? Theme.warn : Theme.fg2)
+                                    color: /(^|\s)(错误|致命|崩溃)[ ：]|失败|超时/.test(modelData) ? Theme.bad : (/(^|\s)警告 /.test(modelData) ? Theme.warn : Theme.fg2)
                                     font.family: Theme.mono; font.pixelSize: 11
                                 }
                             }

@@ -25,9 +25,12 @@ ApplicationWindow {
 
     // Keep the chosen layout across restarts; resize when the user switches.
     // Set the minimum first so a smaller layout is not held at the old one.
+    // Sizes come from landscape directly: minW/minH may not have re-evaluated
+    // yet when this handler runs, which left the window at the old size.
     onLandscapeChanged: {
-        minimumWidth = minW; minimumHeight = minH
-        width = minW; height = minH
+        var w = landscape ? 900 : 360, h = landscape ? 560 : 640
+        minimumWidth = w; minimumHeight = h
+        width = w; height = h
     }
 
     Loader {

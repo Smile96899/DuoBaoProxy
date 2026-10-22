@@ -20,7 +20,7 @@ Rectangle {
             spacing: 10
             Mark { size: 28; look: App.look }
             Dropdown {
-                model: App.cores.map(c => ({v: c.id, l: c.id + (c.version ? "  " + c.version : "")}))
+                model: App.cores.map(c => ({v: c.id, l: c.id}))
                 current: App.coreId
                 onPicked: v => App.setCore(v)
             }

@@ -73,6 +73,11 @@ func create(parent context.Context, cfg []byte, statsOutbounds []string, logFn f
 		// out of the working directory and away from throw-away instances
 		// (which would block on the bbolt lock).
 		boxOptions.PlatformLogWriter = logWriter{logFn}
+		// logFn already timestamps, files and echoes each line; sing-box's own
+		// console copy would show every line twice in the GUI.
+		if options.Log.Output == "" {
+			options.Log.Output = os.DevNull
+		}
 		if options.Experimental == nil {
 			options.Experimental = &option.ExperimentalOptions{}
 		}

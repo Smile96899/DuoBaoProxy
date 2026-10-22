@@ -24,7 +24,7 @@ Item {
             Label { text: "路由"; color: Theme.fg; font.pixelSize: 15; font.weight: Font.DemiBold }
             Seg {
                 visible: !root.compact
-                model: [{v: "rules", l: "规则分流" + (App.routeParts === "apps" ? "（未启用）" : "")}, {v: "apps", l: "应用分流 " + root.apps.length + (App.routeParts === "rules" ? "（未启用）" : "")}]
+                model: [{v: "rules", l: "规则分流"}, {v: "apps", l: "应用分流 " + root.apps.length}]
                 current: root.part
                 onPicked: v => root.part = v
             }
@@ -35,7 +35,7 @@ Item {
         Seg {
             visible: root.compact
             Layout.leftMargin: 18; Layout.bottomMargin: 8
-            model: [{v: "rules", l: "规则分流" + (App.routeParts === "apps" ? "（未启用）" : "")}, {v: "apps", l: "应用分流 " + root.apps.length + (App.routeParts === "rules" ? "（未启用）" : "")}]
+            model: [{v: "rules", l: "规则分流"}, {v: "apps", l: "应用分流 " + root.apps.length}]
             current: root.part
             onPicked: v => root.part = v
         }

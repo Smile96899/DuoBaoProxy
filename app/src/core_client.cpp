@@ -49,7 +49,7 @@ CoreClient::CoreClient(QObject *parent) : QObject(parent) {
         m_ready = false;
         emit readyChanged();
         setRunning({});
-        emit logLine(QStringLiteral("h_core exited (%1)").arg(code));
+        emit logLine(QStringLiteral("h_core 已退出（%1）").arg(code));
     });
 }
 
@@ -94,7 +94,7 @@ void CoreClient::shutdown() {
 void CoreClient::setError(const QString &e) {
     m_lastError = e;
     emit lastErrorChanged();
-    if (!e.isEmpty()) emit logLine("error: " + e);
+    if (!e.isEmpty()) emit logLine(QStringLiteral("错误：") + e);
 }
 
 void CoreClient::setRunning(const QString &core) {

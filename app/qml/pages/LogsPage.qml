@@ -31,7 +31,7 @@ Item {
                     text: modelData
                     wrapMode: Text.WrapAnywhere
                     font.family: Theme.mono; font.pixelSize: 11
-                    color: /error|fatal|failed|timeout/i.test(modelData) ? Theme.bad : (/warn/i.test(modelData) ? Theme.warn : Theme.fg2)
+                    color: /(^|\s)(错误|致命|崩溃)[ ：]|失败|超时/.test(modelData) ? Theme.bad : (/(^|\s)警告 /.test(modelData) ? Theme.warn : Theme.fg2)
                 }
             }
         }

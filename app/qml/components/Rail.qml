@@ -36,7 +36,7 @@ Rectangle {
                 id: corePick
                 x: parent.width + 10; y: 0
                 itemWidth: 170
-                model: App.cores.map(c => ({v: c.id, l: c.id + (c.version ? "  " + c.version : "")}))
+                model: App.cores.map(c => ({v: c.id, l: c.id}))
                 current: App.coreId
                 onPicked: v => App.setCore(v)
             }

@@ -290,6 +290,9 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 	if level == "warn" {
 		level = "warning"
 	}
+	if test {
+		level = "none" // tests report through the RPC result
+	}
 	cfg := render.Obj{"log": render.Obj{"loglevel": level}}
 
 	// Inbounds

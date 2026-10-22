@@ -1,5 +1,6 @@
 pragma Singleton
 import QtQuick
+import "LogZh.js" as LogZh
 
 // Application state and the connect / test / import flows. Pages only
 // bind to these properties and call these functions.
@@ -12,6 +13,7 @@ QtObject {
     readonly property bool connected: core.runningCore !== ""
     property bool busy: false
     property string statusText: "未连接"
+    property string page: "nodes"                // current page, shared by both layouts
     property int latency: 0
     property real upRate: 0
     property real downRate: 0
@@ -47,7 +49,7 @@ QtObject {
     function nodeName(n) { return n ? (n.name && n.name.length ? n.name : n.server + ":" + n.port) : "未选择节点" }
 
     function log(line) {
-        var l = logs.slice(); l.push(line.replace(/\x1b\[[0-9;]*m/g, "")); if (l.length > 500) l.shift(); logs = l
+        var l = logs.slice(); l.push(LogZh.translate(line.replace(/\x1b\[[0-9;]*m/g, ""))); if (l.length > 500) l.shift(); logs = l
     }
 
     function setCore(id) {
@@ -228,7 +230,7 @@ QtObject {
         function onRendered(req, config, tags, error) {
             var p = app.pendingTests[req]; delete app.pendingTests[req]
             if (!p) return
-            if (error !== "") { app.busy = false; app.statusText = error; app.log("render: " + error); return }
+            if (error !== "") { app.busy = false; app.statusText = error; app.log("生成配置失败：" + error); return }
             app.statsTags = tags
             core.startCore(app.coreId, config, tags, sys.appDir())
         }

@@ -39,6 +39,7 @@ qt_add_qml_module(h
         qml/Theme.qml
         qml/App.qml
         qml/Tests.qml
+        qml/LogZh.js
         qml/Landscape.qml
         qml/Portrait.qml
         qml/components/Mark.qml

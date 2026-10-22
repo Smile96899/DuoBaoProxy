@@ -97,7 +97,7 @@ func (s *Server) ListCores(context.Context, *gen.EmptyReq) (*gen.ListCoresResp, 
 
 func (s *Server) Start(ctx context.Context, in *gen.LoadConfigReq) (*gen.ErrorResp, error) {
 	if Debug {
-		log.Println("Start:", coreID(in.CoreId), in.CoreConfig)
+		log.Println("启动内核：", coreID(in.CoreId), in.CoreConfig)
 	}
 	c, err := core.Get(coreID(in.CoreId))
 	if err != nil {
@@ -405,14 +405,14 @@ func Run(args []string, server gen.LibcoreServiceServer) {
 		}
 	}
 	if *token == "" {
-		fmt.Println("You must set a token")
+		fmt.Println("缺少访问令牌（-token）")
 		os.Exit(1)
 	}
-	_, _ = os.Stderr.WriteString("token is set\n")
+	_, _ = os.Stderr.WriteString("已设置访问令牌\n")
 
 	lis, err := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(*port))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Fatalf("监听失败：%v", err)
 	}
 	a := authenticator{token: *token}
 	g := grpc.NewServer(grpc.UnaryInterceptor(a.unary), grpc.StreamInterceptor(a.stream))

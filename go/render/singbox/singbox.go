@@ -461,6 +461,10 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 	}
 	test := req.Mode == render.ModeTest
 	cfg := render.Obj{"log": render.Obj{"level": set.LogLevel}}
+	if test {
+		// Tests report through the RPC result; their logs would only flood the GUI.
+		cfg["log"] = render.Obj{"disabled": true}
+	}
 
 	// Inbounds
 	var inbounds []any
