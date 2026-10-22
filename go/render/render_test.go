@@ -15,10 +15,10 @@ import (
 	xcore "github.com/xtls/xray-core/core"
 	_ "github.com/xtls/xray-core/main/distro/all"
 
-	"hproxy/node"
-	"hproxy/render"
-	"hproxy/render/singbox"
-	"hproxy/render/xray"
+	"duobaoproxy/node"
+	"duobaoproxy/render"
+	"duobaoproxy/render/singbox"
+	"duobaoproxy/render/xray"
 )
 
 var links = []string{
@@ -59,10 +59,6 @@ func TestLinksRoundTrip(t *testing.T) {
 		}
 		if n2.Server != n.Server || n2.Port != n.Port || n2.Protocol != n.Protocol || n2.Name != n.Name {
 			t.Errorf("round trip mismatch:\n %s\n %s", l, back)
-		}
-		h, err := node.ParseLink(n.HProxyLink())
-		if err != nil || h.Server != n.Server {
-			t.Errorf("hproxy link failed for %s: %v", l, err)
 		}
 	}
 }
@@ -115,10 +111,10 @@ func loadSingBox(t *testing.T, cfg []byte) {
 
 func loadXray(t *testing.T, cfg []byte) {
 	t.Helper()
-	if dir := os.Getenv("HPROXY_TEST_XRAY_ASSETS"); dir != "" {
+	if dir := os.Getenv("DUOBAO_TEST_XRAY_ASSETS"); dir != "" {
 		os.Setenv("XRAY_LOCATION_ASSET", dir)
 	} else {
-		t.Skip("set HPROXY_TEST_XRAY_ASSETS to a dir with geoip.dat and geosite.dat")
+		t.Skip("set DUOBAO_TEST_XRAY_ASSETS to a dir with geoip.dat and geosite.dat")
 	}
 	c, err := xcore.LoadConfig("json", bytes.NewReader(cfg))
 	if err != nil {

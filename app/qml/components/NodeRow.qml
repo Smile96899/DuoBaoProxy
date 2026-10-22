@@ -13,20 +13,31 @@ Rectangle {
     signal clicked(int modifiers)
     signal menuRequested(real x, real y)
     signal editRequested()
+    signal dropped()                       // released after a drag; y holds the new position
+    property bool reorderable: true        // false while the list is sorted (order is not the store order)
+    property real startY: 0
+    readonly property bool dragging: dragMa.drag.active
     readonly property var n: entry.node
     readonly property bool active: entry.id === App.selectedId
     readonly property bool ok: App.supports(n)
     radius: Theme.radius
-    color: active ? Theme.accentSoft : (hover.hovered ? Theme.panel2 : "transparent")
+    color: dragging ? Theme.panel : (active ? Theme.accentSoft : (hover.hovered ? Theme.panel2 : "transparent"))
     opacity: ok ? 1 : .45
-    border.width: picked ? 1.5 : 0
-    border.color: Theme.fg2
+    border.width: picked || dragging ? 1.5 : 0
+    border.color: dragging ? Theme.line : Theme.fg2
+    z: dragging ? 2 : 0
     implicitHeight: compact ? 54 : 44
 
     HoverHandler { id: hover }
     MouseArea {
+        id: dragMa
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton | Qt.RightButton
+        // Press and move reorders; a plain click still selects.
+        drag.target: root.reorderable && (pressedButtons & Qt.LeftButton) ? root : null; drag.axis: Drag.YAxis; drag.threshold: 8
+        preventStealing: true
+        onPressed: root.startY = root.y
+        onReleased: if (drag.active || root.y !== root.startY) root.dropped()
         onClicked: mouse => mouse.button === Qt.RightButton ? root.menuRequested(mouse.x, mouse.y) : root.clicked(mouse.modifiers)
         onDoubleClicked: mouse => { if (mouse.button === Qt.LeftButton) root.editRequested() }
     }

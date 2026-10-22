@@ -25,7 +25,7 @@ func Launcher() {
 	// Qt 5.12 abi is usually compatible with system Qt 5.15
 	// But use package Qt 5.12 by default.
 	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, "H_FROM_LAUNCHER=1")
+	cmd.Env = append(cmd.Env, "DUOBAO_FROM_LAUNCHER=1")
 	cmd.Env = append(cmd.Env, ld_env, qt_plugin_env)
 	log.Println(ld_env, qt_plugin_env, cmd)
 

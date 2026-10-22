@@ -31,11 +31,11 @@ static void logToFile(QtMsgType type, const QMessageLogContext &, const QString 
 int main(int argc, char *argv[]) {
     qInstallMessageHandler(logToFile);
     QApplication app(argc, argv); // QApplication (not QGuiApplication) for the tray menu
-    app.setApplicationName("h.proxy");
-    app.setOrganizationName("h.proxy");
-    app.setApplicationVersion(HP_VERSION);
+    app.setApplicationName("DuoBaoProxy");
+    app.setOrganizationName("DuoBao");
+    app.setApplicationVersion(DBP_VERSION);
     app.setQuitOnLastWindowClosed(false);
-    app.setWindowIcon(QIcon(":/qt/qml/HProxy/res/logo.png"));
+    app.setWindowIcon(QIcon(":/qt/qml/DuoBaoProxy/res/logo.png"));
     QQuickStyle::setStyle("Basic");
 
     Store store;
@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
         if (f.open(QIODevice::ReadOnly)) importText = QString::fromUtf8(f.readAll());
     }
     engine.rootContext()->setContextProperty("importText", importText);
-    engine.loadFromModule("HProxy", "Main");
+    engine.loadFromModule("DuoBaoProxy", "Main");
     if (engine.rootObjects().isEmpty()) return 1;
 
     sys.setupTray(engine.rootObjects().first());

@@ -49,9 +49,9 @@ public:
     // What the right-click menu offers. nodes: [{id, name, group, lat, ok}]
     Q_INVOKABLE void setTrayModel(const QVariantList &nodes, int selected, const QString &mode, bool hasTun);
 
-    // Grabs every screen and decodes QR codes with h_core; answers via qrScanned.
+    // Grabs every screen and decodes QR codes with DuoBaoProxyCore; answers via qrScanned.
     Q_INVOKABLE void scanScreenQr();
-    // QR images for the given texts, made by h_core; answers via qrImagesReady (file URLs, in order).
+    // QR images for the given texts, made by DuoBaoProxyCore; answers via qrImagesReady (file URLs, in order).
     Q_INVOKABLE void makeQrImages(const QStringList &texts);
 
 signals:

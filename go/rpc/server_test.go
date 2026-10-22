@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"hproxy/core"
-	"hproxy/core/singbox"
-	"hproxy/core/xray"
-	"hproxy/rpc/gen"
+	"duobaoproxy/core"
+	"duobaoproxy/core/singbox"
+	"duobaoproxy/core/xray"
+	"duobaoproxy/rpc/gen"
 )
 
 const singboxCfg = `{

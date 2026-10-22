@@ -1,5 +1,5 @@
 #pragma once
-// CoreClient owns the h_core child process and the gRPC channel to it.
+// CoreClient owns the DuoBaoProxyCore child process and the gRPC channel to it.
 // Every call is asynchronous; results come back as signals so QML never
 // blocks. Request ids let QML match replies to the row that asked.
 
@@ -26,7 +26,7 @@ public:
     QString runningCore() const { return m_runningCore; }
     QString lastError() const { return m_lastError; }
 
-    // Launches h_core next to the executable and connects to it.
+    // Launches DuoBaoProxyCore next to the executable and connects to it.
     Q_INVOKABLE void launch();
     Q_INVOKABLE void shutdown();
 
@@ -42,7 +42,7 @@ public:
     Q_INVOKABLE void probe(int requestId, const QString &name, const QString &coreId, const QString &config,
                            const QString &address, const QString &url, int count, int timeoutMs);
     Q_INVOKABLE void importNodes(const QString &text);
-    Q_INVOKABLE void shareLink(const QString &nodeJson, bool hproxyFormat);
+    Q_INVOKABLE void shareLink(const QString &nodeJson);
     Q_INVOKABLE void renderConfig(int requestId, const QString &coreId, const QStringList &chainJson, const QString &settingsJson, int mode);
     // Traffic polling for the running core; emits traffic() every second.
     Q_INVOKABLE void watchTraffic(const QStringList &tags);

@@ -18,7 +18,8 @@ Item {
     function setOut(i, out) { var l = apps.slice(); l[i] = Object.assign({}, l[i], {outbound: out}); setApps(l) }
     function remove(i) { var l = apps.slice(); l.splice(i, 1); setApps(l) }
     function add(path) {
-        var file = path.replace(/^file:\/\/\//, "").replace(/\//g, "\\")
+        // Chinese IMEs turn "." into "。" while typing a process name.
+        var file = path.replace(/。/g, ".").replace(/^file:\/\/\//, "").replace(/\//g, "\\")
         // A shortcut names the app ("Google Chrome"); the rule uses its target exe.
         var name = file.split("\\").pop().replace(/\.(exe|lnk)$/i, "")
         var target = sys.resolveShortcut(file)
@@ -47,7 +48,7 @@ Item {
         background: Rectangle { color: Theme.panel; radius: 28; border.width: 1; border.color: Theme.line }
         ColumnLayout { anchors.fill: parent; spacing: 12
             Label { text: "选择应用"; color: Theme.fg; font.pixelSize: 15; font.weight: Font.DemiBold }
-            TextField { id: search; placeholderText: "搜索"; Layout.fillWidth: true; color: Theme.fg; leftPadding: 14; rightPadding: 14; background: Rectangle { radius: height / 2; color: Theme.panel2 } }
+            Input { id: search; placeholderText: "搜索"; Layout.fillWidth: true }
             ListView {
                 Layout.fillWidth: true; Layout.fillHeight: true; clip: true; spacing: 2
                 model: appPicker.shown
@@ -97,7 +98,7 @@ Item {
         background: Rectangle { color: Theme.panel; radius: 28; border.width: 1; border.color: Theme.line }
         ColumnLayout { width: parent.width; spacing: 12
             Label { text: "按进程名添加"; color: Theme.fg; font.pixelSize: 15; font.weight: Font.DemiBold }
-            TextField { id: procField; placeholderText: "chrome.exe 或完整路径"; Layout.fillWidth: true; color: Theme.fg; leftPadding: 14; rightPadding: 14; background: Rectangle { radius: height / 2; color: Theme.panel2 } }
+            Input { id: procField; placeholderText: "chrome.exe 或完整路径"; Layout.fillWidth: true }
             RowLayout { Item { Layout.fillWidth: true }
                 PillButton { text: "取消"; flat: true; onClicked: manual.close() }
                 PillButton { text: "添加"; highlighted: true; enabled: procField.text.trim().length > 0; onClicked: { root.add(procField.text.trim()); procField.text = ""; manual.close() } } }
@@ -108,12 +109,12 @@ Item {
         anchors.fill: parent
         spacing: 0
         RowLayout {
-            Layout.fillWidth: true; Layout.margins: 12; Layout.leftMargin: compact ? 0 : 18; Layout.rightMargin: compact ? 0 : 18; spacing: 10
+            Layout.fillWidth: true; Layout.margins: 12; Layout.leftMargin: 18; Layout.rightMargin: 18; spacing: 10
             Label { visible: !root.embedded; text: "应用分流"; color: Theme.fg; font.pixelSize: compact ? 13 : 15; font.weight: Font.DemiBold }
             Label { text: root.embedded ? apps.length + " 个应用" : apps.length; color: Theme.fg2 }
             Item { Layout.fillWidth: true }
             PillButton { text: "按进程名"; flat: true; onClicked: manual.open() }
-            PillButton { text: "选择程序"; highlighted: true; visible: Qt.platform.os === "windows"; onClicked: appPicker.open() }
+            RoundAdd { visible: Qt.platform.os === "windows"; onClicked: appPicker.open() }
         }
         Rectangle { visible: !compact && !root.embedded; Layout.fillWidth: true; height: 1; color: Theme.line }
         Label {

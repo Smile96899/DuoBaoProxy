@@ -38,14 +38,12 @@ Item {
                     Label { id: statusLbl; text: App.statusText; color: Theme.fg; font.weight: Font.Medium; elide: Text.ElideRight; Layout.fillWidth: true; Layout.maximumWidth: Math.ceil(statusFull.advanceWidth) + 2; Layout.minimumWidth: 40
                         TextMetrics { id: statusFull; text: statusLbl.text; font: statusLbl.font } }
                     Item { Layout.fillWidth: true }
-                    Seg {
-                        visible: !App.coreIsVpn
+                    Dropdown {
                         model: [{v: "rule", l: "规则"}, {v: "global", l: "全局"}, {v: "direct", l: "直连"}]
-                        current: store.ui.proxy_mode || "rule"
+                        current: store.ui.proxy_mode || "global"
                         onPicked: v => { store.setUi("proxy_mode", v); App.reconnect() }
                     }
-                    Seg {
-                        visible: !App.coreIsVpn
+                    Dropdown {
                         model: App.coreHasTun ? [{v: "system", l: "系统代理"}, {v: "tun", l: "TUN"}] : [{v: "system", l: "系统代理"}]
                         current: store.ui.mode || "system"
                         onPicked: v => { store.setUi("mode", v); App.reconnect() }

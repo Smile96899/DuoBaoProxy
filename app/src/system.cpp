@@ -31,11 +31,11 @@ System::System(QObject *parent) : QObject(parent) {}
 
 QString System::platformName() const {
 #if defined(Q_OS_WIN)
-    return QStringLiteral("h.proxy for Windows");
+    return QStringLiteral("DuoBao Proxy for Windows");
 #elif defined(Q_OS_MACOS)
-    return QStringLiteral("h.proxy for macOS");
+    return QStringLiteral("DuoBao Proxy for macOS");
 #else
-    return QStringLiteral("h.proxy for Linux");
+    return QStringLiteral("DuoBao Proxy for Linux");
 #endif
 }
 
@@ -144,11 +144,11 @@ static const char *kRunKey = R"(HKEY_CURRENT_USER\Software\Microsoft\Windows\Cur
 
 bool System::autoStart() const {
 #if defined(Q_OS_WIN)
-    return QSettings(kRunKey, QSettings::NativeFormat).contains("h.proxy");
+    return QSettings(kRunKey, QSettings::NativeFormat).contains("DuoBaoProxy");
 #elif defined(Q_OS_MACOS)
-    return QFile::exists(QDir::homePath() + "/Library/LaunchAgents/proxy.h.plist");
+    return QFile::exists(QDir::homePath() + "/Library/LaunchAgents/com.duobao.proxy.plist");
 #else
-    return QFile::exists(QDir::homePath() + "/.config/autostart/h.proxy.desktop");
+    return QFile::exists(QDir::homePath() + "/.config/autostart/DuoBaoProxy.desktop");
 #endif
 }
 
@@ -156,15 +156,15 @@ void System::setAutoStart(bool on) {
     const QString exe = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
 #if defined(Q_OS_WIN)
     QSettings reg(kRunKey, QSettings::NativeFormat);
-    if (on) reg.setValue("h.proxy", QStringLiteral("\"%1\" -tray").arg(exe));
-    else reg.remove("h.proxy");
+    if (on) reg.setValue("DuoBaoProxy", QStringLiteral("\"%1\" -tray").arg(exe));
+    else reg.remove("DuoBaoProxy");
 #elif defined(Q_OS_MACOS)
-    const QString path = QDir::homePath() + "/Library/LaunchAgents/proxy.h.plist";
+    const QString path = QDir::homePath() + "/Library/LaunchAgents/com.duobao.proxy.plist";
     if (on) {
         QFile f(path);
         if (f.open(QIODevice::WriteOnly)) {
             f.write(QStringLiteral("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<plist version=\"1.0\"><dict>"
-                                   "<key>Label</key><string>proxy.h</string>"
+                                   "<key>Label</key><string>com.duobao.proxy</string>"
                                    "<key>ProgramArguments</key><array><string>%1</string><string>-tray</string></array>"
                                    "<key>RunAtLoad</key><true/></dict></plist>\n").arg(exe).toUtf8());
         }
@@ -174,11 +174,11 @@ void System::setAutoStart(bool on) {
 #else
     const QString dir = QDir::homePath() + "/.config/autostart";
     QDir().mkpath(dir);
-    const QString path = dir + "/h.proxy.desktop";
+    const QString path = dir + "/DuoBaoProxy.desktop";
     if (on) {
         QFile f(path);
         if (f.open(QIODevice::WriteOnly))
-            f.write(QStringLiteral("[Desktop Entry]\nType=Application\nName=h.proxy\nExec=\"%1\" -tray\nX-GNOME-Autostart-enabled=true\n").arg(exe).toUtf8());
+            f.write(QStringLiteral("[Desktop Entry]\nType=Application\nName=多宝代理\nExec=\"%1\" -tray\nX-GNOME-Autostart-enabled=true\n").arg(exe).toUtf8());
     } else {
         QFile::remove(path);
     }
@@ -274,7 +274,7 @@ QVariantList System::installedApps() const {
 
 // The logo with its circle in the state colour: off grey, on green, tun red.
 static QIcon logoIcon(const QString &look) {
-    return QIcon(QStringLiteral(":/qt/qml/HProxy/res/logo-%1.png").arg(look));
+    return QIcon(QStringLiteral(":/qt/qml/DuoBaoProxy/res/logo-%1.png").arg(look));
 }
 
 void System::setupTray(QObject *) {
@@ -302,7 +302,7 @@ void System::setTrayLook(const QString &look) {
 }
 
 void System::notify(const QString &title, const QString &text) {
-    if (m_tray) m_tray->showMessage(title, text, QIcon(QStringLiteral(":/qt/qml/HProxy/res/logo.png")), 3000);
+    if (m_tray) m_tray->showMessage(title, text, QIcon(QStringLiteral(":/qt/qml/DuoBaoProxy/res/logo.png")), 3000);
 }
 
 void System::setTrayModel(const QVariantList &nodes, int selected, const QString &mode, bool hasTun) {
@@ -389,7 +389,7 @@ void System::scanScreenQr() {
     for (const QPixmap &p : shots) { painter.drawPixmap(x, 0, p); x += p.width(); }
     painter.end();
 
-    const QString file = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation)).filePath("hproxy-qr.png");
+    const QString file = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation)).filePath("duobaoproxy-qr.png");
     if (!all.save(file)) { emit qrScanned({}, QStringLiteral("截屏失败")); return; }
 
     auto *proc = new QProcess(this);
@@ -401,16 +401,16 @@ void System::scanScreenQr() {
         else emit qrScanned({}, code == 2 ? QStringLiteral("屏幕上没有找到二维码") : QStringLiteral("二维码识别失败"));
     });
 #ifdef Q_OS_WIN
-    proc->start(appDir() + "/h_core.exe", {"qr", file});
+    proc->start(appDir() + "/DuoBaoProxyCore.exe", {"qr", file});
 #else
-    proc->start(appDir() + "/h_core", {"qr", file});
+    proc->start(appDir() + "/DuoBaoProxyCore", {"qr", file});
 #endif
 }
 
 void System::makeQrImages(const QStringList &texts) {
     if (!m_qrDir.isEmpty()) QDir(m_qrDir).removeRecursively();
     m_qrDir = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
-                  .filePath(QStringLiteral("hproxy-share-%1").arg(QDateTime::currentMSecsSinceEpoch()));
+                  .filePath(QStringLiteral("duobaoproxy-share-%1").arg(QDateTime::currentMSecsSinceEpoch()));
     QDir().mkpath(m_qrDir);
 
     auto *proc = new QProcess(this);
@@ -423,9 +423,9 @@ void System::makeQrImages(const QStringList &texts) {
         emit qrImagesReady(urls, code == 0 ? QString() : QStringLiteral("二维码生成失败：%1").arg(err));
     });
 #ifdef Q_OS_WIN
-    proc->start(appDir() + "/h_core.exe", {"qr-encode", m_qrDir});
+    proc->start(appDir() + "/DuoBaoProxyCore.exe", {"qr-encode", m_qrDir});
 #else
-    proc->start(appDir() + "/h_core", {"qr-encode", m_qrDir});
+    proc->start(appDir() + "/DuoBaoProxyCore", {"qr-encode", m_qrDir});
 #endif
     proc->write(texts.join('\n').toUtf8() + '\n');
     proc->closeWriteChannel();

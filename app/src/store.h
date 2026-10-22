@@ -39,6 +39,11 @@ public:
     Q_INVOKABLE void addGroup(const QVariantMap &group);
     Q_INVOKABLE void updateGroup(const QString &name, const QVariantMap &patch);
     Q_INVOKABLE void removeGroup(const QString &name);
+    Q_INVOKABLE void moveGroup(int from, int to);
+    // Places node id next to node targetId (after it when `after`), adopting its group.
+    Q_INVOKABLE void moveNode(int id, int targetId, bool after);
+    // Appends node id to the end of group (used when dropping on an empty group).
+    Q_INVOKABLE void moveNodeToGroup(int id, const QString &group);
 
     Q_INVOKABLE void setSetting(const QString &key, const QVariant &value);
     Q_INVOKABLE QString settingsJson() const;

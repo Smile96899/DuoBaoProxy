@@ -15,7 +15,7 @@ import (
 )
 
 // decodeQR prints the text of every QR code found in a PNG, one per line.
-// The GUI grabs the screen and calls "h_core qr <file>".
+// The GUI grabs the screen and calls "DuoBaoProxyCore qr <file>".
 func decodeQR(path string) int {
 	f, err := os.Open(path)
 	if err != nil {
@@ -50,7 +50,7 @@ func decodeQR(path string) int {
 }
 
 // encodeQR reads one text per line from stdin and writes <dir>/<n>.png for
-// each, printing the file paths in order. "h_core qr-encode <dir>"
+// each, printing the file paths in order. "DuoBaoProxyCore qr-encode <dir>"
 func encodeQR(dir string) int {
 	in := bufio.NewScanner(os.Stdin)
 	in.Buffer(make([]byte, 64*1024), 1024*1024)

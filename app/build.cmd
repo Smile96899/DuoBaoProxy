@@ -1,5 +1,5 @@
 @echo off
-rem Configure + build the h.proxy GUI with MSVC and Qt. Usage: build.cmd [Release|Debug]
+rem Configure + build the DuoBao Proxy GUI with MSVC and Qt. Usage: build.cmd [Release|Debug]
 setlocal
 set CFG=%1
 if "%CFG%"=="" set CFG=Release

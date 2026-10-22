@@ -49,7 +49,7 @@ CoreClient::CoreClient(QObject *parent) : QObject(parent) {
         m_ready = false;
         emit readyChanged();
         setRunning({});
-        emit logLine(QStringLiteral("h_core 已退出（%1）").arg(code));
+        emit logLine(QStringLiteral("核心已退出（%1）").arg(code));
     });
 }
 
@@ -61,18 +61,18 @@ void CoreClient::launch() {
     m_token = randomToken();
     const QString exe = QCoreApplication::applicationDirPath() + QDir::separator() +
 #ifdef Q_OS_WIN
-        "h_core.exe";
+        "DuoBaoProxyCore.exe";
 #else
-        "h_core";
+        "DuoBaoProxyCore";
 #endif
     m_proc.setWorkingDirectory(QCoreApplication::applicationDirPath());
     m_proc.start(exe, {"run", "-port", QString::number(m_port), "-token", m_token});
     if (!m_proc.waitForStarted(5000)) {
-        setError(QStringLiteral("无法启动 h_core：%1").arg(exe));
+        setError(QStringLiteral("无法启动核心：%1").arg(exe));
         return;
     }
     QGrpcChannelOptions opts;
-    opts.setMetadata({{"h_auth", m_token.toUtf8()}});
+    opts.setMetadata({{"duobao_auth", m_token.toUtf8()}});
     m_channel = std::make_shared<QGrpcHttp2Channel>(QUrl(QStringLiteral("http://127.0.0.1:%1").arg(m_port)), opts);
     m_client = std::make_unique<LibcoreService::Client>();
     m_client->attachChannel(m_channel);
@@ -88,7 +88,10 @@ void CoreClient::shutdown() {
         auto reply = m_client->Exit(EmptyReq());
         Q_UNUSED(reply);
     }
-    if (!m_proc.waitForFinished(1500)) m_proc.kill();
+    if (!m_proc.waitForFinished(1500)) {
+        m_proc.kill();
+        m_proc.waitForFinished(1000);   // launch() right after needs NotRunning
+    }
 }
 
 void CoreClient::setError(const QString &e) {
@@ -130,7 +133,6 @@ void CoreClient::listCores() {
             QVariantMap m;
             m["id"] = c.id_proto();
             m["version"] = c.version();
-            m["kind"] = c.kind() == CoreKindGadget::CoreKind::SystemVPN ? "vpn" : "proxy";
             m["protocols"] = c.protocols();
             m["running"] = c.running();
             out << m;
@@ -230,11 +232,10 @@ void CoreClient::importNodes(const QString &text) {
     });
 }
 
-void CoreClient::shareLink(const QString &nodeJson, bool hproxyFormat) {
+void CoreClient::shareLink(const QString &nodeJson) {
     REQUIRE_CLIENT(emit linkReady({}, "core not ready"))
     ShareLinkReq req;
     req.setNodeJson(nodeJson);
-    req.setHproxyFormat(hproxyFormat);
     await<ShareLinkResp>(m_client->ShareLink(req), this, [this](const ShareLinkResp &r, const QString &err) {
         emit linkReady(r.link(), err.isEmpty() ? r.error() : err);
     });

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds h_core for the current or requested platform.
+# Builds DuoBaoProxyCore for the current or requested platform.
 #
 #   ./build_core.sh                      # host platform, output ./dist/<os>-<arch>/
 #   GOOS=linux GOARCH=amd64 ./build_core.sh
@@ -17,8 +17,8 @@ TAGS="with_quic,with_wireguard,with_utls,with_gvisor,with_clash_api"
 LDFLAGS="-w -s -X main.Version=$VERSION -X github.com/sagernet/sing-box/constant.Version=$SINGBOX_VERSION"
 
 mkdir -p "$DEST"
-[ "$GOOS" == "windows" ] && CORE_NAME=h_core.exe || CORE_NAME=h_core
+[ "$GOOS" == "windows" ] && CORE_NAME=DuoBaoProxyCore.exe || CORE_NAME=DuoBaoProxyCore
 
 export CGO_ENABLED=0 GOOS GOARCH
-go build -trimpath -tags "$TAGS" -ldflags "$LDFLAGS" -o "$DEST/$CORE_NAME" ./cmd/h_core
+go build -trimpath -tags "$TAGS" -ldflags "$LDFLAGS" -o "$DEST/$CORE_NAME" ./cmd/duobaoproxy-core
 echo "built $DEST/$CORE_NAME (sing-box $SINGBOX_VERSION, xray $(go list -m -f '{{.Version}}' github.com/xtls/xray-core))"

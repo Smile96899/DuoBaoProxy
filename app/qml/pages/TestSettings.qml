@@ -10,7 +10,6 @@ Item {
     property string kind: ""            // "" = the list
     readonly property var info: Tests.kind(kind)
 
-    component Input: TextField { color: Theme.fg; leftPadding: 14; rightPadding: 14; background: Rectangle { radius: height / 2; color: Theme.panel2 } }
 
     Flickable {
         anchors.fill: parent

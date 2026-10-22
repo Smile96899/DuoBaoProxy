@@ -28,7 +28,7 @@ Popup {
             Layout.fillWidth: true; implicitHeight: 180
             radius: 16; color: Theme.bg; border.width: 1; border.color: Theme.line
             ScrollView { anchors.fill: parent; anchors.margins: 8
-                TextArea { id: ta; color: Theme.fg; font.family: Theme.mono; font.pixelSize: 12; background: null; wrapMode: TextEdit.WrapAnywhere; placeholderText: "vmess:// ss:// vless:// trojan:// hy2:// tuic:// hproxy:// …" }
+                TextArea { id: ta; color: Theme.fg; placeholderTextColor: Theme.fg3; selectionColor: Theme.accent; selectedTextColor: Theme.accentFg; selectByMouse: true; font.family: Theme.mono; font.pixelSize: 12; background: null; wrapMode: TextEdit.WrapAnywhere; placeholderText: "vmess:// ss:// vless:// trojan:// hy2:// tuic:// …" }
             }
         }
         RowLayout {

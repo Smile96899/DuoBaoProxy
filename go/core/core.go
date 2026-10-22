@@ -1,5 +1,5 @@
 // Package core defines the backend-independent interface that every proxy
-// engine (sing-box, xray, IKEv2) implements, plus a registry the gRPC layer
+// engine (sing-box, xray) implements, plus a registry the gRPC layer
 // uses to look engines up by id.
 package core
 
@@ -15,21 +15,9 @@ import (
 const (
 	IDSingBox = "sing-box"
 	IDXray    = "xray"
-	IDIKEv2   = "ikev2"
 )
 
-// Kind tells the GUI how a core behaves: a Proxy core exposes local
-// inbounds and supports routing; a SystemVPN core replaces the system
-// default route and has no routing/inbound concept.
-type Kind int
-
-const (
-	KindProxy Kind = iota
-	KindSystemVPN
-)
-
-// Dialer dials through a running instance. Cores that cannot dial through
-// themselves (system VPN) return the system dialer.
+// Dialer dials through a running instance.
 type Dialer interface {
 	DialContext(ctx context.Context, network, addr string) (net.Conn, error)
 	ListenPacket(ctx context.Context) (net.PacketConn, error)
@@ -43,8 +31,7 @@ type Traffic struct {
 
 // StartOptions carries the engine-native config plus flags shared by cores.
 type StartOptions struct {
-	// Config is the engine-native configuration (JSON for sing-box / xray,
-	// JSON-encoded ikev2.Profile for IKEv2).
+	// Config is the engine-native JSON configuration.
 	Config []byte
 	// StatsOutbounds enables traffic counters for these outbound tags.
 	StatsOutbounds []string
@@ -57,11 +44,10 @@ type StartOptions struct {
 
 type Core interface {
 	ID() string
-	Kind() Kind
 	Version() string
 	// Protocols this core can carry, as protocol ids understood by the GUI
 	// ("vmess", "vless", "trojan", "shadowsocks", "hysteria2", "tuic",
-	// "wireguard", "socks", "http", "ssh", "ikev2" ...).
+	// "wireguard", "socks", "http", "ssh" ...).
 	Protocols() []string
 
 	Start(ctx context.Context, opts StartOptions) error

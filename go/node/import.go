@@ -1,6 +1,7 @@
 package node
 
 import (
+	"encoding/base64"
 	"fmt"
 	"strconv"
 	"strings"
@@ -17,7 +18,7 @@ type ImportResult struct {
 
 // Import accepts anything a user might paste or a subscription might serve:
 // one or more share links (one per line), a base64 blob of such links, a
-// Clash/Clash.Meta YAML document, or a single hproxy:// link.
+// Clash/Clash.Meta YAML document, or a single share link.
 func Import(text string) ImportResult {
 	text = strings.TrimSpace(text)
 	var r ImportResult
@@ -180,6 +181,18 @@ func clashNode(p clashProxy) *Node {
 				opts = clashProxy{}
 			}
 			switch plugin {
+			case "shadow-tls":
+				// ss + shadow-tls plugin is our shadowtls node.
+				n.Protocol = ShadowTLS
+				v := opts.integer("version")
+				if v == 0 {
+					v = 2 // mihomo defaults the shadow-tls plugin to v2
+				}
+				n.ShadowTLS = &ShadowTLSOptions{Version: v, SSPassword: n.Password}
+				n.Password = opts.str("password")
+				s := n.stream()
+				s.SNI = opts.str("host")
+				s.Fingerprint = p.str("client-fingerprint")
 			case "obfs":
 				n.Plugin = "obfs-local;obfs=" + opts.str("mode") + ";obfs-host=" + opts.str("host")
 			case "v2ray-plugin":
@@ -272,6 +285,29 @@ func clashNode(p clashProxy) *Node {
 			s.PacketEncoding = "packetaddr"
 		}
 		clashTransport(p, s)
+	case "wireguard":
+		n.Protocol = WireGuard
+		addr := p.str("ip")
+		if v6 := p.str("ipv6"); v6 != "" {
+			addr += "," + v6
+		}
+		peer := p
+		if p.str("public-key") == "" {
+			// mihomo's multi-peer form keeps the peer fields under peers[0].
+			if peers, ok := p["peers"].([]any); ok && len(peers) > 0 {
+				if m, ok := peers[0].(map[string]any); ok {
+					peer = clashProxy(m)
+					if s := peer.str("server"); s != "" {
+						n.Server, n.Port = s, peer.integer("port")
+					}
+				}
+			}
+		}
+		n.WireGuard = &WireGuardOptions{PrivateKey: p.str("private-key"), PeerPublicKey: peer.str("public-key"), PreSharedKey: peer.str("pre-shared-key"), LocalAddress: addr, MTU: p.integer("mtu"), Reserved: clashReserved(peer.list("reserved"))}
+	case "hysteria":
+		n.Protocol = Hysteria
+		n.Hysteria = &HysteriaOptions{Auth: p.str("auth-str", "auth_str", "auth"), Obfs: p.str("obfs"), UpMbps: p.integer("up"), DownMbps: p.integer("down")}
+		n.QUICTLS = &QUICTLS{SNI: p.str("sni"), ALPN: strings.Join(p.list("alpn"), ","), AllowInsecure: p.boolean("skip-cert-verify")}
 	case "hysteria2":
 		n.Protocol = Hysteria2
 		n.Password = p.str("password")
@@ -346,4 +382,14 @@ func clashTransport(p clashProxy, s *Stream) {
 			s.Path = paths[0]
 		}
 	}
+}
+
+// clashReserved accepts [1,2,3] or mihomo's base64 form "AQID" and returns "1,2,3".
+func clashReserved(v []string) string {
+	if len(v) == 1 {
+		if b, err := base64.StdEncoding.DecodeString(v[0]); err == nil && len(b) == 3 {
+			return fmt.Sprintf("%d,%d,%d", b[0], b[1], b[2])
+		}
+	}
+	return strings.Join(v, ",")
 }

@@ -20,7 +20,7 @@ import (
 	M "github.com/sagernet/sing/common/metadata"
 	"github.com/sagernet/sing/service"
 
-	"hproxy/core"
+	"duobaoproxy/core"
 )
 
 type Core struct {
@@ -31,11 +31,10 @@ type Core struct {
 func New() *Core { return &Core{} }
 
 func (c *Core) ID() string      { return core.IDSingBox }
-func (c *Core) Kind() core.Kind { return core.KindProxy }
 func (c *Core) Version() string { return constant.Version }
 
 func (c *Core) Protocols() []string {
-	return []string{"socks", "http", "shadowsocks", "vmess", "vless", "trojan", "hysteria2", "tuic", "wireguard", "ssh", "shadowtls", "anytls"}
+	return []string{"socks", "http", "shadowsocks", "vmess", "vless", "trojan", "hysteria2", "tuic", "ssh", "anytls", "wireguard", "hysteria", "shadowtls"}
 }
 
 type logWriter struct{ fn func(string) }
@@ -85,7 +84,7 @@ func create(parent context.Context, cfg []byte, statsOutbounds []string, logFn f
 			options.Experimental.CacheFile = &option.CacheFileOptions{}
 		}
 		if options.Experimental.CacheFile.Path == "" {
-			options.Experimental.CacheFile.Path = filepath.Join(os.TempDir(), "hproxy-singbox-cache.db")
+			options.Experimental.CacheFile.Path = filepath.Join(os.TempDir(), "duobaoproxy-singbox-cache.db")
 		}
 		boxOptions.Options = options
 	}

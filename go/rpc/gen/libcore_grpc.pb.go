@@ -35,8 +35,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// LibcoreService is the control channel between the h.proxy GUI and h_core.
-// One h_core process hosts every core; the GUI picks one with core_id.
+// LibcoreService is the control channel between the DuoBao Proxy GUI and DuoBaoProxyCore.
+// One DuoBaoProxyCore process hosts every core; the GUI picks one with core_id.
 type LibcoreServiceClient interface {
 	Exit(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*EmptyResp, error)
 	// Core discovery: which engines this build contains and what they support.
@@ -165,8 +165,8 @@ func (c *libcoreServiceClient) RenderConfig(ctx context.Context, in *RenderConfi
 // All implementations must embed UnimplementedLibcoreServiceServer
 // for forward compatibility.
 //
-// LibcoreService is the control channel between the h.proxy GUI and h_core.
-// One h_core process hosts every core; the GUI picks one with core_id.
+// LibcoreService is the control channel between the DuoBao Proxy GUI and DuoBaoProxyCore.
+// One DuoBaoProxyCore process hosts every core; the GUI picks one with core_id.
 type LibcoreServiceServer interface {
 	Exit(context.Context, *EmptyReq) (*EmptyResp, error)
 	// Core discovery: which engines this build contains and what they support.

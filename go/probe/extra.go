@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"hproxy/core"
+	"duobaoproxy/core"
 )
 
 // Probes the GUI runs one at a time per node. Each returns a JSON report;

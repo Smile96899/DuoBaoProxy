@@ -23,7 +23,6 @@ Item {
                 horizontalAlignment: Text.AlignHCenter; wrapMode: Text.Wrap
                 color: Theme.fg3; font.pixelSize: 13
                 text: App.coreId === "xray" ? "xray 内核不提供连接列表。切换到 sing-box 查看。"
-                    : App.coreIsVpn ? "系统 VPN 由操作系统管理，没有连接列表。"
                     : !App.connected ? "未连接。"
                     : "连接列表接口尚未实现。"
             }

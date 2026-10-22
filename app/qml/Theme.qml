@@ -5,8 +5,17 @@ import QtQuick
 // state (accent), latency (good/warn/bad) and errors.
 QtObject {
     id: theme
-    property string mode: "system"          // system | light | dark
+    property string mode: "system"          // system | light | dark | mixed
     readonly property bool dark: mode === "dark" || (mode === "system" && Qt.styleHints.colorScheme === Qt.Dark)
+    // mixed: light content with a dark rail / tab bar.
+    readonly property bool railDark: dark || mode === "mixed"
+    readonly property color railBg:     railDark ? "#111317" : bg
+    readonly property color railPanel:  railDark ? "#1a1d23" : panel
+    readonly property color railPanel2: railDark ? "#22262e" : panel2
+    readonly property color railLine:   railDark ? "#2c313b" : line
+    readonly property color railFg:     railDark ? "#e8eaee" : fg
+    readonly property color railFg2:    railDark ? "#a0a7b4" : fg2
+    readonly property color railFg3:    railDark ? "#6c7482" : fg3
 
     readonly property color bg:        dark ? "#111317" : "#f3f4f6"
     readonly property color panel:     dark ? "#1a1d23" : "#ffffff"

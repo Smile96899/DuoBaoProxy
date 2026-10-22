@@ -12,7 +12,7 @@ Item {
     property string part: "rules"       // rules | apps
     readonly property var routing: store.settings.routing || ({})
     readonly property var apps: store.settings.apps || []
-    readonly property string proxyMode: store.ui.proxy_mode || "rule"
+    readonly property string proxyMode: store.ui.proxy_mode || "global"
 
     ColumnLayout {
         anchors.fill: parent
@@ -21,23 +21,22 @@ Item {
         RowLayout {
             Layout.fillWidth: true; Layout.margins: 12; Layout.leftMargin: 18; Layout.rightMargin: 18
             spacing: 10
-            Label { text: "路由"; color: Theme.fg; font.pixelSize: 15; font.weight: Font.DemiBold }
+            Label { visible: !root.compact; text: "路由"; color: Theme.fg; font.pixelSize: 15; font.weight: Font.DemiBold }
             Seg {
-                visible: !root.compact
                 model: [{v: "rules", l: "规则分流"}, {v: "apps", l: "应用分流 " + root.apps.length}]
                 current: root.part
                 onPicked: v => root.part = v
             }
             Item { Layout.fillWidth: true }
+            // Portrait keeps the proxy-mode picker here, on the same line, to save a row.
+            Dropdown {
+                visible: root.compact
+                model: [{v: "rule", l: "规则"}, {v: "global", l: "全局"}, {v: "direct", l: "直连"}]
+                current: root.proxyMode
+                onPicked: v => { store.setUi("proxy_mode", v); App.reconnect() }
+            }
             PillButton { text: "导出 JSON"; flat: true; visible: !root.compact
                 onClicked: { var req = App.nextReq++; App.pendingTests[req] = {kind: "export"}; core.renderConfig(req, App.coreId, [store.nodeJson(App.selectedId)], JSON.stringify(App.renderSettings()), 2) } }
-        }
-        Seg {
-            visible: root.compact
-            Layout.leftMargin: 18; Layout.bottomMargin: 8
-            model: [{v: "rules", l: "规则分流"}, {v: "apps", l: "应用分流 " + root.apps.length}]
-            current: root.part
-            onPicked: v => root.part = v
         }
 
         Rectangle { Layout.fillWidth: true; height: 1; color: Theme.line }
@@ -56,13 +55,6 @@ Item {
                     x: 18; y: 12
                     spacing: 16
 
-                    Seg {
-                        visible: root.compact
-                        model: [{v: "rule", l: "规则"}, {v: "global", l: "全局"}, {v: "direct", l: "直连"}]
-                        current: root.proxyMode
-                        onPicked: v => { store.setUi("proxy_mode", v); App.reconnect() }
-                    }
-
                     GridLayout {
                         Layout.fillWidth: true
                         columns: root.compact || col.width < 440 ? 1 : (col.width < 700 ? 2 : 3)
@@ -77,11 +69,11 @@ Item {
 
                     Label { text: "兜底与 DNS"; color: Theme.fg3; font.pixelSize: 11; font.capitalization: Font.AllUppercase; font.letterSpacing: 1 }
                     Field { Layout.fillWidth: true; title: "未匹配流量"
-                        Seg { model: [{v: "proxy", l: "代理"}, {v: "bypass", l: "直连"}]; current: root.routing.final || "proxy"; onPicked: v => store.setSetting("routing.final", v) } }
+                        Dropdown { model: [{v: "proxy", l: "代理"}, {v: "bypass", l: "直连"}]; current: root.routing.final || "proxy"; onPicked: v => store.setSetting("routing.final", v) } }
                     Field { Layout.fillWidth: true; title: "远程 DNS"
-                        TextField { width: 240; text: root.routing.remote_dns || ""; color: Theme.fg; leftPadding: 14; rightPadding: 14; background: Rectangle { radius: height / 2; color: Theme.panel2 } onEditingFinished: store.setSetting("routing.remote_dns", text) } }
+                        Input { width: 240; text: root.routing.remote_dns || ""; onEditingFinished: store.setSetting("routing.remote_dns", text) } }
                     Field { Layout.fillWidth: true; title: "直连 DNS"
-                        TextField { width: 240; text: root.routing.direct_dns || ""; color: Theme.fg; leftPadding: 14; rightPadding: 14; background: Rectangle { radius: height / 2; color: Theme.panel2 } onEditingFinished: store.setSetting("routing.direct_dns", text) } }
+                        Input { width: 240; text: root.routing.direct_dns || ""; onEditingFinished: store.setSetting("routing.direct_dns", text) } }
                     Field { Layout.fillWidth: true; title: "DNS 分流"
                         Toggle { on: root.routing.dns_routing === true; onClicked: store.setSetting("routing.dns_routing", !on) } }
                 }

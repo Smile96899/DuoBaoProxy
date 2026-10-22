@@ -16,17 +16,17 @@ func Updater() {
 		if runtime.GOOS == "linux" {
 			os.RemoveAll("./usr")
 		}
-		os.RemoveAll("./h_update")
+		os.RemoveAll("./DuoBaoProxy_update")
 	}
 
 	// find update package
 	var updatePackagePath string
 	if len(os.Args) == 2 && Exist(os.Args[1]) {
 		updatePackagePath = os.Args[1]
-	} else if Exist("./h.proxy.zip") {
-		updatePackagePath = "./h.proxy.zip"
-	} else if Exist("./h.tar.gz") {
-		updatePackagePath = "./h.tar.gz"
+	} else if Exist("./DuoBaoProxy.zip") {
+		updatePackagePath = "./DuoBaoProxy.zip"
+	} else if Exist("./DuoBaoProxy.tar.gz") {
+		updatePackagePath = "./DuoBaoProxy.tar.gz"
 	} else {
 		log.Fatalln("no update")
 	}
@@ -39,7 +39,7 @@ func Updater() {
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
-		err = extract.Zip(context.Background(), f, "./h_update", nil)
+		err = extract.Zip(context.Background(), f, "./DuoBaoProxy_update", nil)
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
@@ -50,7 +50,7 @@ func Updater() {
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
-		err = extract.Gz(context.Background(), f, "./h_update", nil)
+		err = extract.Gz(context.Background(), f, "./DuoBaoProxy_update", nil)
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
@@ -62,15 +62,15 @@ func Updater() {
 	removeAll("./*.dmp")
 
 	// update move
-	err := Mv("./h_update/h", "./")
+	err := Mv("./DuoBaoProxy_update/DuoBaoProxy", "./")
 	if err != nil {
-		MessageBoxPlain("h Updater", "Update failed. Please close the running instance and run the updater again.\n\n"+err.Error())
+		MessageBoxPlain("DuoBao Proxy Updater", "Update failed. Please close the running instance and run the updater again.\n\n"+err.Error())
 		log.Fatalln(err.Error())
 	}
 
-	os.RemoveAll("./h_update")
-	os.RemoveAll("./h.proxy.zip")
-	os.RemoveAll("./h.tar.gz")
+	os.RemoveAll("./DuoBaoProxy_update")
+	os.RemoveAll("./DuoBaoProxy.zip")
+	os.RemoveAll("./DuoBaoProxy.tar.gz")
 }
 
 func Exist(path string) bool {

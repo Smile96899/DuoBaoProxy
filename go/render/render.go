@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"strings"
 
-	"hproxy/node"
+	"duobaoproxy/node"
 )
 
 // Mode selects how much of the config is produced.
@@ -126,7 +126,7 @@ func (s *Settings) Defaults() {
 		s.TUN.MTU = 9000
 	}
 	if s.TUN.InterfaceName == "" {
-		s.TUN.InterfaceName = "h-tun"
+		s.TUN.InterfaceName = "duobao-tun"
 	}
 	if s.Routing.Final == "" {
 		s.Routing.Final = "proxy"

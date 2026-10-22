@@ -30,7 +30,7 @@ func icmpEcho(ip net.IP, timeout time.Duration) (int32, error) {
 	}
 	defer icmpCloseHandle.Call(h)
 
-	data := []byte("h.proxy ping")
+	data := []byte("DuoBao Proxy ping")
 	reply := make([]byte, 256+len(data))
 	addr := *(*uint32)(unsafe.Pointer(&ip4[0]))
 	n, _, _ := icmpSendEcho.Call(h, uintptr(addr),

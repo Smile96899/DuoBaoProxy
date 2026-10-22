@@ -18,6 +18,26 @@ Popup {
     padding: 24
     background: Rectangle { color: Theme.panel; radius: 28; border.width: 1; border.color: Theme.line }
 
+    // Protocols a node can be created with by hand, and their usual ports.
+    readonly property var protocols: [
+        {v: "socks", l: "SOCKS5", port: 1080}, {v: "http", l: "HTTP", port: 8080}, {v: "shadowsocks", l: "Shadowsocks", port: 8388},
+        {v: "vmess", l: "VMess", port: 443}, {v: "vless", l: "VLESS", port: 443}, {v: "trojan", l: "Trojan", port: 443},
+        {v: "hysteria2", l: "Hysteria2", port: 443}, {v: "tuic", l: "TUIC", port: 443}, {v: "ssh", l: "SSH", port: 22}, {v: "anytls", l: "AnyTLS", port: 443},
+        {v: "wireguard", l: "WireGuard", port: 51820}, {v: "hysteria", l: "Hysteria (v1)", port: 443}, {v: "shadowtls", l: "ShadowTLS", port: 443}
+    ]
+    function openNew(protocol) {
+        var p = protocols.find(x => x.v === protocol) || {port: 443}
+        nodeId = -1
+        group = App.defaultGroup
+        mode = "form"; error = ""
+        draft = {protocol: protocol, server: "", port: p.port}
+        if (protocol === "trojan" || protocol === "anytls") draft.stream = {sec: "tls"}
+        if (protocol === "shadowsocks" || protocol === "shadowtls") draft.method = "aes-256-gcm"
+        if (protocol === "shadowtls") draft.shadowtls = {version: 3}
+        if (protocol === "wireguard") draft.wireguard = {local_address: "10.0.0.2/32"}
+        open()
+    }
+
     function openFor(id) {
         var e = store.node(id)
         if (!e.node) return
@@ -67,7 +87,6 @@ Popup {
             {l: "地址", p: ["server"], t: "text"},
             {l: "端口", p: ["port"], t: "int"}
         ]
-        if (p === "ikev2") return [base[0]]
         var auth = {
             "socks": [{l: "用户名", p: ["username"], t: "text"}, {l: "密码", p: ["password"], t: "text"}],
             "http": [{l: "用户名", p: ["username"], t: "text"}, {l: "密码", p: ["password"], t: "text"}],
@@ -79,10 +98,21 @@ Popup {
                           {l: "上行 Mbps", p: ["hysteria2", "up_mbps"], t: "int"}, {l: "下行 Mbps", p: ["hysteria2", "down_mbps"], t: "int"},
                           {l: "端口跳跃", p: ["hysteria2", "hop_ports"], t: "text", h: "如 20000-30000"}],
             "tuic": [{l: "UUID", p: ["uuid"], t: "text"}, {l: "密码", p: ["password"], t: "text"}, {l: "拥塞控制", p: ["tuic", "congestion_control"], t: "text", h: "bbr、cubic"}],
-            "naive": [{l: "用户名", p: ["username"], t: "text"}, {l: "密码", p: ["password"], t: "text"}, {l: "SNI", p: ["naive", "sni"], t: "text"}]
+            "naive": [{l: "用户名", p: ["username"], t: "text"}, {l: "密码", p: ["password"], t: "text"}, {l: "SNI", p: ["naive", "sni"], t: "text"}],
+            "ssh": [{l: "用户名", p: ["username"], t: "text"}, {l: "密码", p: ["password"], t: "text"}],
+            "anytls": [{l: "密码", p: ["password"], t: "text"}],
+            "wireguard": [{l: "本机私钥", p: ["wireguard", "private_key"], t: "text"}, {l: "对端公钥", p: ["wireguard", "peer_public_key"], t: "text"},
+                          {l: "预共享密钥", p: ["wireguard", "pre_shared_key"], t: "text"}, {l: "本机地址", p: ["wireguard", "local_address"], t: "text", h: "10.0.0.2/32,fd00::2/128"},
+                          {l: "Reserved", p: ["wireguard", "reserved"], t: "text", h: "WARP 用，如 1,2,3"}, {l: "MTU", p: ["wireguard", "mtu"], t: "int"}],
+            "hysteria": [{l: "认证字符串", p: ["hysteria", "auth"], t: "text"}, {l: "上行 Mbps", p: ["hysteria", "up_mbps"], t: "int"}, {l: "下行 Mbps", p: ["hysteria", "down_mbps"], t: "int"},
+                         {l: "混淆密码", p: ["hysteria", "obfs"], t: "text"}],
+            "shadowtls": [{l: "ShadowTLS 密码", p: ["password"], t: "text"}, {l: "版本", p: ["shadowtls", "version"], t: "int", h: "3"},
+                          {l: "握手 SNI", p: ["stream", "sni"], t: "text", h: "如 www.microsoft.com"}, {l: "指纹", p: ["stream", "utls"], t: "text", h: "chrome"},
+                          {l: "SS 加密方式", p: ["method"], t: "text"}, {l: "SS 密码", p: ["shadowtls", "ss_password"], t: "text"}]
         }[p] || []
-        var extra = (p === "hysteria2" || p === "tuic") ? quicFields
-                  : (["vmess", "vless", "trojan"].indexOf(p) >= 0 || draft.stream) ? tlsFields : []
+        var extra = (p === "hysteria2" || p === "tuic" || p === "hysteria") ? quicFields
+                  : (p === "shadowtls" || p === "wireguard" || p === "ssh") ? []
+                  : (["vmess", "vless", "trojan", "anytls"].indexOf(p) >= 0 || draft.stream) ? tlsFields : []
         return base.concat(auth, extra)
     }
 
@@ -98,15 +128,19 @@ Popup {
     }
     function save() {
         if (mode === "json" && !fromJson()) return
-        if (draft.protocol !== "ikev2") {
-            if (!String(draft.server || "").trim().length) { error = "地址不能为空"; return }
-            var port = Number(draft.port)
-            if (!(port >= 1 && port <= 65535)) { error = "端口要在 1–65535 之间"; return }
-            draft.port = port
+        if (!String(draft.server || "").trim().length) { error = "地址不能为空"; return }
+        var port = Number(draft.port)
+        if (!(port >= 1 && port <= 65535)) { error = "端口要在 1–65535 之间"; return }
+        draft.port = port
+        if (nodeId < 0) {
+            var id = store.addNode(JSON.stringify(draft), group)
+            if (id < 0) { error = "节点数据无效"; return }
+            App.log("已添加节点 " + App.nodeName(draft))
+        } else {
+            store.updateNode(nodeId, {node: draft, group: group, lat: 0, res: {}})
+            App.log("已保存节点 " + App.nodeName(draft))
+            if (App.connected && App.selectedId === nodeId) App.reconnect()
         }
-        store.updateNode(nodeId, {node: draft, group: group, lat: 0, res: {}})
-        App.log("已保存节点 " + App.nodeName(draft))
-        if (App.connected && App.selectedId === nodeId) App.reconnect()
         close()
     }
 
@@ -114,7 +148,7 @@ Popup {
         spacing: 14
         RowLayout {
             Layout.fillWidth: true
-            Label { text: "编辑节点"; color: Theme.fg; font.pixelSize: 15; font.weight: Font.DemiBold }
+            Label { text: root.nodeId < 0 ? "添加节点" : "编辑节点"; color: Theme.fg; font.pixelSize: 15; font.weight: Font.DemiBold }
             Rectangle { radius: 4; color: Theme.panel2; height: 18; Layout.preferredWidth: protoLbl.implicitWidth + 12
                 Label { id: protoLbl; anchors.centerIn: parent; text: root.draft.protocol || ""; color: Theme.fg2; font.pixelSize: 11; font.family: Theme.mono } }
             Item { Layout.fillWidth: true }
@@ -144,15 +178,13 @@ Popup {
                         Layout.fillWidth: true; spacing: 12
                         readonly property var value: root.getAt(root.draft, modelData.p)
                         Label { text: modelData.l; color: Theme.fg2; font.pixelSize: 13; Layout.preferredWidth: 110; elide: Text.ElideRight }
-                        TextField {
+                        Input {
                             visible: modelData.t === "text" || modelData.t === "int"
                             Layout.fillWidth: true
                             text: fieldRow.value === undefined || fieldRow.value === null ? "" : String(fieldRow.value)
                             placeholderText: modelData.h || ""
                             validator: modelData.t === "int" ? intOnly : null
-                            color: Theme.fg; font.family: modelData.t === "int" ? Theme.mono : Theme.font
-                            leftPadding: 14; rightPadding: 14
-                            background: Rectangle { radius: height / 2; color: Theme.panel2 }
+                            font.family: modelData.t === "int" ? Theme.mono : Theme.font
                             onTextEdited: root.setAt(root.draft, modelData.p, modelData.t === "int" ? (text === "" ? "" : Number(text)) : text)
                         }
                         Item {
@@ -185,7 +217,7 @@ Popup {
             radius: 16; color: Theme.bg; border.width: 1; border.color: Theme.line
             ScrollView {
                 anchors.fill: parent; anchors.margins: 10
-                TextArea { id: jsonArea; color: Theme.fg; font.family: Theme.mono; font.pixelSize: 12; background: null; wrapMode: TextEdit.WrapAnywhere; selectByMouse: true }
+                TextArea { id: jsonArea; color: Theme.fg; placeholderTextColor: Theme.fg3; selectionColor: Theme.accent; selectedTextColor: Theme.accentFg; selectByMouse: true; font.family: Theme.mono; font.pixelSize: 12; background: null; wrapMode: TextEdit.WrapAnywhere }
             }
         }
 

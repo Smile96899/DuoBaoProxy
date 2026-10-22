@@ -1,1 +1,30 @@
+#pragma code_page(65001)
+#include <winver.h>
+
 IDI_ICON1 ICON "logo.ico"
+
+// Shown in Explorer's file properties and Task Manager.
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION 1,0,0,0
+PRODUCTVERSION 1,0,0,0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080404b0"
+        BEGIN
+            VALUE "CompanyName", "DuoBao"
+            VALUE "FileDescription", "多宝代理 DuoBao Proxy for Windows"
+            VALUE "FileVersion", "1.0"
+            VALUE "InternalName", "DuoBaoProxy"
+            VALUE "OriginalFilename", "DuoBaoProxy.exe"
+            VALUE "ProductName", "多宝代理 DuoBao Proxy"
+            VALUE "ProductVersion", "1.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0804, 1200
+    END
+END

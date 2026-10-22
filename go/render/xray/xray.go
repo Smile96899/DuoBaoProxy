@@ -2,12 +2,19 @@
 package xray
 
 import (
+	"crypto/sha256"
+	"crypto/tls"
+	"encoding/hex"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
+	"net"
+	"strconv"
 	"strings"
+	"time"
 
-	"hproxy/node"
-	"hproxy/render"
+	"duobaoproxy/node"
+	"duobaoproxy/render"
 )
 
 type Renderer struct{}
@@ -16,13 +23,14 @@ func New() *Renderer { return &Renderer{} }
 
 var supported = map[string]bool{
 	node.Socks: true, node.HTTP: true, node.Shadowsocks: true, node.VMess: true, node.VLESS: true, node.Trojan: true,
+	node.WireGuard: true,
 }
 
 func (r *Renderer) Supports(protocol string) bool { return supported[protocol] }
 
 // --- outbound -----------------------------------------------------------
 
-func streamSettings(s *node.Stream, set *render.Settings) render.Obj {
+func streamSettings(n *node.Node, s *node.Stream, set *render.Settings) (render.Obj, error) {
 	ss := render.Obj{}
 	network := "tcp"
 	if s != nil && s.Network != "" {
@@ -116,7 +124,12 @@ func streamSettings(s *node.Stream, set *render.Settings) render.Obj {
 				t["serverName"] = s.SNI
 			}
 			if s.AllowInsecure || set.SkipCertVerify {
-				t["allowInsecure"] = true
+				// xray dropped allowInsecure; pin the certificate instead.
+				pin, err := pinnedCert(n, s)
+				if err != nil {
+					return nil, fmt.Errorf("xray 不再支持跳过证书验证，且无法获取服务器证书用于固定：%w", err)
+				}
+				t["pinnedPeerCertSha256"] = pin
 			}
 			if v := strings.TrimSpace(s.ALPN); v != "" {
 				t["alpn"] = render.Strings(render.SplitComma(v))
@@ -133,7 +146,7 @@ func streamSettings(s *node.Stream, set *render.Settings) render.Obj {
 	} else {
 		ss["security"] = "none"
 	}
-	return ss
+	return ss, nil
 }
 
 // Outbound renders one node as an xray outbound without tag.
@@ -188,11 +201,41 @@ func Outbound(n *node.Node, set *render.Settings) (render.Obj, error) {
 		}
 		out["protocol"] = "vless"
 		out["settings"] = render.Obj{"vnext": []any{render.Obj{"address": n.Server, "port": n.Port, "users": []any{user}}}}
+	case node.WireGuard:
+		w := n.WireGuard
+		allowed := []any{"0.0.0.0/0"}
+		for _, a := range render.SplitComma(w.LocalAddress) {
+			if strings.Contains(a, ":") {
+				allowed = append(allowed, "::/0")
+				break
+			}
+		}
+		peer := render.Obj{"publicKey": w.PeerPublicKey, "endpoint": fmt.Sprintf("%s:%d", n.Server, n.Port), "allowedIPs": allowed}
+		if w.PreSharedKey != "" {
+			peer["preSharedKey"] = w.PreSharedKey
+		}
+		st := render.Obj{"secretKey": w.PrivateKey, "address": render.Strings(render.SplitComma(w.LocalAddress)), "peers": []any{peer}}
+		if w.MTU > 0 {
+			st["mtu"] = w.MTU
+		}
+		if r := node.ReservedBytes(w.Reserved); r != nil {
+			st["reserved"] = []any{r[0], r[1], r[2]}
+		}
+		out["protocol"] = "wireguard"
+		out["settings"] = st
+		if err := render.MergeRaw(out, n.CustomOutbound); err != nil {
+			return nil, err
+		}
+		return out, nil // no streamSettings for wireguard
 	case node.Trojan:
 		out["protocol"] = "trojan"
 		out["settings"] = render.Obj{"servers": []any{render.Obj{"address": n.Server, "port": n.Port, "password": n.Password}}}
 	}
-	out["streamSettings"] = streamSettings(n.Stream, set)
+	ss, err := streamSettings(n, n.Stream, set)
+	if err != nil {
+		return nil, err
+	}
+	out["streamSettings"] = ss
 	if err := render.MergeRaw(out, n.CustomOutbound); err != nil {
 		return nil, err
 	}
@@ -454,4 +497,32 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 		return nil, err
 	}
 	return &render.Result{Config: b, StatsTags: statsTags}, nil
+}
+
+// pinnedCert returns the hex SHA-256 of the server certificate: from the
+// certificate the node carries, otherwise fetched from the server (trust on
+// first use) so self-signed setups keep working on xray.
+func pinnedCert(n *node.Node, s *node.Stream) (string, error) {
+	if v := strings.TrimSpace(s.Certificate); v != "" {
+		if b, _ := pem.Decode([]byte(v)); b != nil {
+			sum := sha256.Sum256(b.Bytes)
+			return hex.EncodeToString(sum[:]), nil
+		}
+	}
+	sni := strings.TrimSpace(s.SNI)
+	if sni == "" {
+		sni = n.Server
+	}
+	d := &net.Dialer{Timeout: 8 * time.Second}
+	conn, err := tls.DialWithDialer(d, "tcp", net.JoinHostPort(n.Server, strconv.Itoa(n.Port)), &tls.Config{InsecureSkipVerify: true, ServerName: sni})
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close()
+	certs := conn.ConnectionState().PeerCertificates
+	if len(certs) == 0 {
+		return "", fmt.Errorf("server sent no certificate")
+	}
+	sum := sha256.Sum256(certs[0].Raw)
+	return hex.EncodeToString(sum[:]), nil
 }

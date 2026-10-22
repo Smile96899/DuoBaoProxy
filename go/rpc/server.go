@@ -20,17 +20,16 @@ import (
 
 	"google.golang.org/grpc"
 
-	"hproxy/core"
-	"hproxy/node"
-	"hproxy/probe"
-	"hproxy/render"
-	"hproxy/render/singbox"
-	"hproxy/render/xray"
-	"hproxy/rpc/gen"
+	"duobaoproxy/core"
+	"duobaoproxy/node"
+	"duobaoproxy/probe"
+	"duobaoproxy/render"
+	"duobaoproxy/render/singbox"
+	"duobaoproxy/render/xray"
+	"duobaoproxy/rpc/gen"
 )
 
-// renderers maps core ids to config renderers. IKEv2 has none: its node
-// carries the profile JSON that Start consumes directly.
+// renderers maps core ids to config renderers.
 var renderers = map[string]render.Renderer{
 	core.IDSingBox: singbox.New(),
 	core.IDXray:    xray.New(),
@@ -80,14 +79,9 @@ func (s *Server) Exit(context.Context, *gen.EmptyReq) (*gen.EmptyResp, error) {
 func (s *Server) ListCores(context.Context, *gen.EmptyReq) (*gen.ListCoresResp, error) {
 	out := &gen.ListCoresResp{}
 	for _, c := range core.List() {
-		kind := gen.CoreKind_Proxy
-		if c.Kind() == core.KindSystemVPN {
-			kind = gen.CoreKind_SystemVPN
-		}
 		out.Cores = append(out.Cores, &gen.CoreInfo{
 			Id:        c.ID(),
 			Version:   c.Version(),
-			Kind:      kind,
 			Protocols: c.Protocols(),
 			Running:   c.Running(),
 		})
@@ -338,13 +332,14 @@ func (s *Server) ShareLink(ctx context.Context, in *gen.ShareLinkReq) (*gen.Shar
 	if err := json.Unmarshal([]byte(in.NodeJson), &n); err != nil {
 		return &gen.ShareLinkResp{Error: err.Error()}, nil
 	}
-	switch {
-	case in.HproxyFormat:
-		return &gen.ShareLinkResp{Link: n.HProxyLink()}, nil
-	case in.V2RaynVmess && n.Protocol == node.VMess:
+	if in.V2RaynVmess && n.Protocol == node.VMess {
 		return &gen.ShareLinkResp{Link: n.VMessLinkV2RayN()}, nil
 	}
-	return &gen.ShareLinkResp{Link: n.ShareLink()}, nil
+	link := n.ShareLink()
+	if link == "" {
+		return &gen.ShareLinkResp{Error: n.Protocol + " 没有通用的分享链接格式"}, nil
+	}
+	return &gen.ShareLinkResp{Link: link}, nil
 }
 
 func (s *Server) RenderConfig(ctx context.Context, in *gen.RenderConfigReq) (*gen.RenderConfigResp, error) {
@@ -359,14 +354,6 @@ func (s *Server) RenderConfig(ctx context.Context, in *gen.RenderConfigReq) (*ge
 	}
 	if len(chain) == 0 {
 		return &gen.RenderConfigResp{Error: "empty chain"}, nil
-	}
-	if id == core.IDIKEv2 {
-		// The IKEv2 profile is the config; chains make no sense here.
-		n := chain[len(chain)-1]
-		if n.Protocol != node.IKEv2 || len(n.IKEv2) == 0 {
-			return &gen.RenderConfigResp{Error: "ikev2 core needs an ikev2 node"}, nil
-		}
-		return &gen.RenderConfigResp{Config: string(n.IKEv2)}, nil
 	}
 	r, ok := renderers[id]
 	if !ok {
@@ -388,7 +375,7 @@ func (s *Server) RenderConfig(ctx context.Context, in *gen.RenderConfigReq) (*ge
 // Run parses the command line (after the sub-command), watches the parent
 // process and serves gRPC on 127.0.0.1:<port> until the parent dies.
 func Run(args []string, server gen.LibcoreServiceServer) {
-	fs := flag.NewFlagSet("h_core", flag.ExitOnError)
+	fs := flag.NewFlagSet("DuoBaoProxyCore", flag.ExitOnError)
 	token := fs.String("token", "", "shared secret; read from stdin when empty")
 	port := fs.Int("port", 19810, "listen port on 127.0.0.1")
 	debug := fs.Bool("debug", false, "log every request")
@@ -417,7 +404,7 @@ func Run(args []string, server gen.LibcoreServiceServer) {
 	a := authenticator{token: *token}
 	g := grpc.NewServer(grpc.UnaryInterceptor(a.unary), grpc.StreamInterceptor(a.stream))
 	gen.RegisterLibcoreServiceServer(g, server)
-	log.Printf("h.proxy 核心 gRPC 服务监听于 %v\n", lis.Addr())
+	log.Printf("多宝代理核心 gRPC 服务监听于 %v\n", lis.Addr())
 	if err := g.Serve(lis); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
 		log.Fatalf("服务启动失败：%v", err)
 	}

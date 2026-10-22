@@ -144,9 +144,7 @@ Item {
         ColumnLayout {
             width: parent.width; spacing: 14
             Label { text: "新建分组"; color: Theme.fg; font.pixelSize: 15; font.weight: Font.DemiBold }
-            TextField { id: nameField; placeholderText: "分组名称"; Layout.fillWidth: true; color: Theme.fg; leftPadding: 14; rightPadding: 14
-                background: Rectangle { radius: height / 2; color: Theme.panel2 }
-                onAccepted: newGroup.create() }
+            Input { id: nameField; placeholderText: "分组名称"; Layout.fillWidth: true; onAccepted: newGroup.create() }
             Label { visible: newGroup.taken; text: "已有同名分组"; color: Theme.bad; font.pixelSize: 12 }
             RowLayout {
                 Item { Layout.fillWidth: true }
@@ -304,15 +302,38 @@ Item {
     }
 
     readonly property var itemsByGroup: { var m = {}; grouped.forEach(g => m[g.name] = g.items); return m }
+    readonly property var entryById: { var m = {}; store.nodes.forEach(e => m[e.id] = e); return m }
+    // Ids per group, replaced only when the sequence changes, so delegates are
+    // not rebuilt (and a drag not cut short) by latency / result updates.
+    property var idsByGroup: ({})
     property var groupNames: []
+    function storeGroupIndex(name) { return store.groups.findIndex(g => g.name === name) }
     function syncGroupNames() {
         var n = grouped.map(g => g.name)
         if (JSON.stringify(n) !== JSON.stringify(groupNames)) groupNames = n
+        var ids = {}
+        grouped.forEach(g => ids[g.name] = g.items.map(e => e.id))
+        if (JSON.stringify(ids) !== JSON.stringify(idsByGroup)) idsByGroup = ids
     }
     onGroupedChanged: syncGroupNames()
     Component.onCompleted: syncGroupNames()
 
     ImportDialog { id: importDialog }
+    // The + button: paste links, or build a node by hand for one protocol.
+    PillMenu {
+        id: addMenu
+        Action { text: "导入链接 / 订阅"; onTriggered: importDialog.openWith("") }
+        PillMenu {
+            id: manualMenu
+            title: "手动添加"
+            Instantiator {
+                model: nodeEditor.protocols
+                delegate: Action { text: modelData.l; onTriggered: nodeEditor.openNew(modelData.v) }
+                onObjectAdded: (index, object) => manualMenu.insertAction(index, object)
+                onObjectRemoved: (index, object) => manualMenu.removeAction(object)
+            }
+        }
+    }
     NodeEditor { id: nodeEditor }
 
     ColumnLayout {
@@ -326,13 +347,11 @@ Item {
             spacing: 10
             Label { text: "节点"; color: Theme.fg; font.pixelSize: 15; font.weight: Font.DemiBold }
             Label { text: store.nodes.length; color: Theme.fg2 }
-            TextField {
+            Input {
                 visible: !compact
                 placeholderText: "搜索名称 / 地址"
                 Layout.fillWidth: true; Layout.maximumWidth: 200; Layout.minimumWidth: 90
                 onTextChanged: root.query = text
-                color: Theme.fg
-                leftPadding: 14; rightPadding: 14; background: Rectangle { radius: height / 2; color: Theme.panel2 }
             }
             Dropdown {
                 model: [{v: "default", l: "默认排序"}, {v: "latency", l: "按延迟"}, {v: "speed", l: "按速度"}, {v: "geo", l: "按地区"}, {v: "name", l: "按名称"}]
@@ -340,7 +359,7 @@ Item {
                 onPicked: v => store.setUi("sort", v)
             }
             Item { Layout.fillWidth: true }
-            PillButton { text: "导入"; highlighted: true; onClicked: importDialog.openWith("") }
+            RoundAdd { id: addBtn; onClicked: addMenu.popup(addBtn, 0, addBtn.height + 6) }
         }
         Rectangle { visible: !compact; Layout.fillWidth: true; height: 1; color: Theme.line }
 
@@ -387,19 +406,70 @@ Item {
             delegate: Column {
                 id: groupBox
                 readonly property string groupName: modelData
+                readonly property int groupIndex: index
                 readonly property var groupItems: root.itemsByGroup[groupName] || []
+                readonly property var groupIds: root.idsByGroup[groupName] || []
+                property real startY: 0
+                property bool rowDragging: false
+                readonly property bool dragging: headMa.drag.active
                 width: list.width - 20
                 spacing: 2
+                z: dragging || rowDragging ? 2 : 0
+                // Dragging a header reorders groups (same as on the 分组 page).
+                function dropGroup() {
+                    var cy = y + header.height / 2, to = groupIndex, best = Math.abs(startY + header.height / 2 - cy)
+                    var kids = list.contentItem.children
+                    for (var i = 0; i < kids.length; i++) {
+                        var k = kids[i]
+                        if (k === groupBox || k.groupIndex === undefined) continue
+                        var d = Math.abs(k.y + 16 - cy)
+                        if (d < best) { best = d; to = k.groupIndex }
+                    }
+                    y = startY
+                    if (to !== groupIndex) store.moveGroup(root.storeGroupIndex(groupName), root.storeGroupIndex(kids.find(k => k.groupIndex === to).groupName))
+                }
+                // Dropping a node row: next to the nearest other row, or onto an empty group.
+                function dropNode(row) {
+                    var cy = y + row.y + row.height / 2
+                    var same = row.startY === row.y
+                    // Only move when something is nearer than the row's own slot.
+                    var best = Math.abs(row.y - row.startY), target = null, after = false, emptyGroup = ""
+                    var kids = list.contentItem.children
+                    for (var i = 0; i < kids.length; i++) {
+                        var g = kids[i]
+                        if (g.groupIndex === undefined) continue
+                        if (g.groupItems.length === 0 || root.collapsed[g.groupName]) {
+                            var dg = Math.abs(g.y + 16 - cy)
+                            if (dg < best) { best = dg; target = null; emptyGroup = g.groupName }
+                            continue
+                        }
+                        for (var j = 0; j < g.children.length; j++) {
+                            var r = g.children[j]
+                            if (r === row || !r.entry) continue
+                            var c = g.y + r.y + r.height / 2, d = Math.abs(c - cy)
+                            if (d < best) { best = d; target = r.entry.id; after = cy > c; emptyGroup = "" }
+                        }
+                    }
+                    if (same || root.sortMode !== "default") { row.y = row.startY; return }
+                    if (target !== null) store.moveNode(row.entry.id, target, after)
+                    else if (emptyGroup !== "") store.moveNodeToGroup(row.entry.id, emptyGroup)
+                    else row.y = row.startY
+                }
                 Rectangle {
                     id: header
                     width: parent.width; height: 32; radius: Theme.radius
-                    color: gh.hovered || root.pickedGroups[groupBox.groupName] ? Theme.panel2 : "transparent"
-                    border.width: root.pickedGroups[groupBox.groupName] ? 1.5 : 0
-                    border.color: Theme.fg2
+                    color: groupBox.dragging ? Theme.panel : (gh.hovered || root.pickedGroups[groupBox.groupName] ? Theme.panel2 : "transparent")
+                    border.width: root.pickedGroups[groupBox.groupName] || groupBox.dragging ? 1.5 : 0
+                    border.color: groupBox.dragging ? Theme.line : Theme.fg2
                     HoverHandler { id: gh }
                     MouseArea {
+                        id: headMa
                         anchors.fill: parent
                         acceptedButtons: Qt.LeftButton | Qt.RightButton
+                        drag.target: pressedButtons & Qt.LeftButton ? groupBox : null; drag.axis: Drag.YAxis; drag.threshold: 8
+                        preventStealing: true
+                        onPressed: groupBox.startY = groupBox.y
+                        onReleased: if (drag.active || groupBox.y !== groupBox.startY) groupBox.dropGroup()
                         onClicked: mouse => mouse.button === Qt.RightButton
                             ? root.openGroupMenu(groupBox.groupName, header, mouse.x, mouse.y)
                             : root.headerClicked(groupBox.groupName, mouse.modifiers)
@@ -414,23 +484,26 @@ Item {
                     }
                 }
                 Repeater {
-                    model: root.collapsed[groupBox.groupName] ? [] : groupBox.groupItems
+                    model: root.collapsed[groupBox.groupName] ? [] : groupBox.groupIds
                     NodeRow {
                         id: row
-                        width: parent.width; entry: modelData; compact: root.compact
+                        width: parent.width; entry: root.entryById[modelData] || ({id: modelData, node: {}}); compact: root.compact
+                        reorderable: root.sortMode === "default"
+                        onDraggingChanged: groupBox.rowDragging = dragging
                         columns: root.visibleColumns
-                        picked: !!root.picked[modelData.id]
+                        picked: !!root.picked[row.entry.id]
                         selecting: root.pickedIds.length > 0
-                        onClicked: modifiers => root.rowClicked(modelData.id, modifiers)
-                        onMenuRequested: (x, y) => root.openMenu(modelData.id, row, x, y)
-                        onEditRequested: { root.clearPicked(); nodeEditor.openFor(modelData.id) }
+                        onClicked: modifiers => root.rowClicked(row.entry.id, modifiers)
+                        onMenuRequested: (x, y) => root.openMenu(row.entry.id, row, x, y)
+                        onEditRequested: { root.clearPicked(); nodeEditor.openFor(row.entry.id) }
+                        onDropped: groupBox.dropNode(row)
                     }
                 }
             }
             Label {
                 visible: store.nodes.length === 0
                 anchors.centerIn: parent
-                text: "还没有节点。点右上角「导入」粘贴链接或订阅。"
+                text: "还没有节点。点右上角「+」粘贴链接或订阅。"
                 color: Theme.fg3; font.pixelSize: 13
             }
         }

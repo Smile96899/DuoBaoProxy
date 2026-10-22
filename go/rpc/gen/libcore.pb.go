@@ -21,52 +21,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type CoreKind int32
-
-const (
-	CoreKind_Proxy     CoreKind = 0 // local inbounds + routing (sing-box, xray)
-	CoreKind_SystemVPN CoreKind = 1 // replaces the system route, no routing (ikev2)
-)
-
-// Enum value maps for CoreKind.
-var (
-	CoreKind_name = map[int32]string{
-		0: "Proxy",
-		1: "SystemVPN",
-	}
-	CoreKind_value = map[string]int32{
-		"Proxy":     0,
-		"SystemVPN": 1,
-	}
-)
-
-func (x CoreKind) Enum() *CoreKind {
-	p := new(CoreKind)
-	*p = x
-	return p
-}
-
-func (x CoreKind) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (CoreKind) Descriptor() protoreflect.EnumDescriptor {
-	return file_libcore_proto_enumTypes[0].Descriptor()
-}
-
-func (CoreKind) Type() protoreflect.EnumType {
-	return &file_libcore_proto_enumTypes[0]
-}
-
-func (x CoreKind) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use CoreKind.Descriptor instead.
-func (CoreKind) EnumDescriptor() ([]byte, []int) {
-	return file_libcore_proto_rawDescGZIP(), []int{0}
-}
-
 type TestMode int32
 
 const (
@@ -104,11 +58,11 @@ func (x TestMode) String() string {
 }
 
 func (TestMode) Descriptor() protoreflect.EnumDescriptor {
-	return file_libcore_proto_enumTypes[1].Descriptor()
+	return file_libcore_proto_enumTypes[0].Descriptor()
 }
 
 func (TestMode) Type() protoreflect.EnumType {
-	return &file_libcore_proto_enumTypes[1]
+	return &file_libcore_proto_enumTypes[0]
 }
 
 func (x TestMode) Number() protoreflect.EnumNumber {
@@ -117,7 +71,7 @@ func (x TestMode) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TestMode.Descriptor instead.
 func (TestMode) EnumDescriptor() ([]byte, []int) {
-	return file_libcore_proto_rawDescGZIP(), []int{1}
+	return file_libcore_proto_rawDescGZIP(), []int{0}
 }
 
 type RenderMode int32
@@ -153,11 +107,11 @@ func (x RenderMode) String() string {
 }
 
 func (RenderMode) Descriptor() protoreflect.EnumDescriptor {
-	return file_libcore_proto_enumTypes[2].Descriptor()
+	return file_libcore_proto_enumTypes[1].Descriptor()
 }
 
 func (RenderMode) Type() protoreflect.EnumType {
-	return &file_libcore_proto_enumTypes[2]
+	return &file_libcore_proto_enumTypes[1]
 }
 
 func (x RenderMode) Number() protoreflect.EnumNumber {
@@ -166,7 +120,7 @@ func (x RenderMode) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RenderMode.Descriptor instead.
 func (RenderMode) EnumDescriptor() ([]byte, []int) {
-	return file_libcore_proto_rawDescGZIP(), []int{2}
+	return file_libcore_proto_rawDescGZIP(), []int{1}
 }
 
 type EmptyReq struct {
@@ -287,9 +241,8 @@ func (x *ErrorResp) GetError() string {
 
 type CoreInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"` // "sing-box" | "xray" | "ikev2"
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"` // "sing-box" | "xray"
 	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
-	Kind          CoreKind               `protobuf:"varint,3,opt,name=kind,proto3,enum=libcore.CoreKind" json:"kind,omitempty"`
 	Protocols     []string               `protobuf:"bytes,4,rep,name=protocols,proto3" json:"protocols,omitempty"` // protocol ids this core can carry
 	Running       bool                   `protobuf:"varint,5,opt,name=running,proto3" json:"running,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -338,13 +291,6 @@ func (x *CoreInfo) GetVersion() string {
 		return x.Version
 	}
 	return ""
-}
-
-func (x *CoreInfo) GetKind() CoreKind {
-	if x != nil {
-		return x.Kind
-	}
-	return CoreKind_Proxy
 }
 
 func (x *CoreInfo) GetProtocols() []string {
@@ -998,8 +944,7 @@ func (x *ImportNodesResp) GetErrors() []string {
 type ShareLinkReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	NodeJson      string                 `protobuf:"bytes,1,opt,name=node_json,json=nodeJson,proto3" json:"node_json,omitempty"`
-	HproxyFormat  bool                   `protobuf:"varint,2,opt,name=hproxy_format,json=hproxyFormat,proto3" json:"hproxy_format,omitempty"` // force the lossless hproxy:// form
-	V2RaynVmess   bool                   `protobuf:"varint,3,opt,name=v2rayn_vmess,json=v2raynVmess,proto3" json:"v2rayn_vmess,omitempty"`    // legacy base64 JSON form for vmess
+	V2RaynVmess   bool                   `protobuf:"varint,3,opt,name=v2rayn_vmess,json=v2raynVmess,proto3" json:"v2rayn_vmess,omitempty"` // legacy base64 JSON form for vmess
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1039,13 +984,6 @@ func (x *ShareLinkReq) GetNodeJson() string {
 		return x.NodeJson
 	}
 	return ""
-}
-
-func (x *ShareLinkReq) GetHproxyFormat() bool {
-	if x != nil {
-		return x.HproxyFormat
-	}
-	return false
 }
 
 func (x *ShareLinkReq) GetV2RaynVmess() bool {
@@ -1244,13 +1182,12 @@ const file_libcore_proto_rawDesc = "" +
 	"\bEmptyReq\"\v\n" +
 	"\tEmptyResp\"!\n" +
 	"\tErrorResp\x12\x14\n" +
-	"\x05error\x18\x01 \x01(\tR\x05error\"\x93\x01\n" +
+	"\x05error\x18\x01 \x01(\tR\x05error\"r\n" +
 	"\bCoreInfo\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\tR\aversion\x12%\n" +
-	"\x04kind\x18\x03 \x01(\x0e2\x11.libcore.CoreKindR\x04kind\x12\x1c\n" +
+	"\aversion\x18\x02 \x01(\tR\aversion\x12\x1c\n" +
 	"\tprotocols\x18\x04 \x03(\tR\tprotocols\x12\x18\n" +
-	"\arunning\x18\x05 \x01(\bR\arunning\"8\n" +
+	"\arunning\x18\x05 \x01(\bR\arunningJ\x04\b\x03\x10\x04\"8\n" +
 	"\rListCoresResp\x12'\n" +
 	"\x05cores\x18\x01 \x03(\v2\x11.libcore.CoreInfoR\x05cores\"\xcd\x01\n" +
 	"\rLoadConfigReq\x12\x1f\n" +
@@ -1300,11 +1237,10 @@ const file_libcore_proto_rawDesc = "" +
 	"\x0fImportNodesResp\x12\x1d\n" +
 	"\n" +
 	"nodes_json\x18\x01 \x03(\tR\tnodesJson\x12\x16\n" +
-	"\x06errors\x18\x02 \x03(\tR\x06errors\"s\n" +
+	"\x06errors\x18\x02 \x03(\tR\x06errors\"T\n" +
 	"\fShareLinkReq\x12\x1b\n" +
-	"\tnode_json\x18\x01 \x01(\tR\bnodeJson\x12#\n" +
-	"\rhproxy_format\x18\x02 \x01(\bR\fhproxyFormat\x12!\n" +
-	"\fv2rayn_vmess\x18\x03 \x01(\bR\vv2raynVmess\"9\n" +
+	"\tnode_json\x18\x01 \x01(\tR\bnodeJson\x12!\n" +
+	"\fv2rayn_vmess\x18\x03 \x01(\bR\vv2raynVmessJ\x04\b\x02\x10\x03\"9\n" +
 	"\rShareLinkResp\x12\x12\n" +
 	"\x04link\x18\x01 \x01(\tR\x04link\x12\x14\n" +
 	"\x05error\x18\x02 \x01(\tR\x05error\"\x97\x01\n" +
@@ -1318,10 +1254,7 @@ const file_libcore_proto_rawDesc = "" +
 	"\x05error\x18\x01 \x01(\tR\x05error\x12\x16\n" +
 	"\x06config\x18\x02 \x01(\tR\x06config\x12\x1d\n" +
 	"\n" +
-	"stats_tags\x18\x03 \x03(\tR\tstatsTags*$\n" +
-	"\bCoreKind\x12\t\n" +
-	"\x05Proxy\x10\x00\x12\r\n" +
-	"\tSystemVPN\x10\x01*=\n" +
+	"stats_tags\x18\x03 \x03(\tR\tstatsTags*=\n" +
 	"\bTestMode\x12\v\n" +
 	"\aTcpPing\x10\x00\x12\v\n" +
 	"\aUrlTest\x10\x01\x12\f\n" +
@@ -1344,7 +1277,7 @@ const file_libcore_proto_rawDesc = "" +
 	"QueryStats\x12\x16.libcore.QueryStatsReq\x1a\x17.libcore.QueryStatsResp\"\x00\x12B\n" +
 	"\vImportNodes\x12\x17.libcore.ImportNodesReq\x1a\x18.libcore.ImportNodesResp\"\x00\x12<\n" +
 	"\tShareLink\x12\x15.libcore.ShareLinkReq\x1a\x16.libcore.ShareLinkResp\"\x00\x12E\n" +
-	"\fRenderConfig\x12\x18.libcore.RenderConfigReq\x1a\x19.libcore.RenderConfigResp\"\x00B\x10Z\x0ehproxy/rpc/genb\x06proto3"
+	"\fRenderConfig\x12\x18.libcore.RenderConfigReq\x1a\x19.libcore.RenderConfigResp\"\x00B\x15Z\x13duobaoproxy/rpc/genb\x06proto3"
 
 var (
 	file_libcore_proto_rawDescOnce sync.Once
@@ -1358,62 +1291,60 @@ func file_libcore_proto_rawDescGZIP() []byte {
 	return file_libcore_proto_rawDescData
 }
 
-var file_libcore_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_libcore_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_libcore_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_libcore_proto_goTypes = []any{
-	(CoreKind)(0),            // 0: libcore.CoreKind
-	(TestMode)(0),            // 1: libcore.TestMode
-	(RenderMode)(0),          // 2: libcore.RenderMode
-	(*EmptyReq)(nil),         // 3: libcore.EmptyReq
-	(*EmptyResp)(nil),        // 4: libcore.EmptyResp
-	(*ErrorResp)(nil),        // 5: libcore.ErrorResp
-	(*CoreInfo)(nil),         // 6: libcore.CoreInfo
-	(*ListCoresResp)(nil),    // 7: libcore.ListCoresResp
-	(*LoadConfigReq)(nil),    // 8: libcore.LoadConfigReq
-	(*StopReq)(nil),          // 9: libcore.StopReq
-	(*StatusResp)(nil),       // 10: libcore.StatusResp
-	(*TestReq)(nil),          // 11: libcore.TestReq
-	(*TestResp)(nil),         // 12: libcore.TestResp
-	(*QueryStatsReq)(nil),    // 13: libcore.QueryStatsReq
-	(*QueryStatsResp)(nil),   // 14: libcore.QueryStatsResp
-	(*ImportNodesReq)(nil),   // 15: libcore.ImportNodesReq
-	(*ImportNodesResp)(nil),  // 16: libcore.ImportNodesResp
-	(*ShareLinkReq)(nil),     // 17: libcore.ShareLinkReq
-	(*ShareLinkResp)(nil),    // 18: libcore.ShareLinkResp
-	(*RenderConfigReq)(nil),  // 19: libcore.RenderConfigReq
-	(*RenderConfigResp)(nil), // 20: libcore.RenderConfigResp
+	(TestMode)(0),            // 0: libcore.TestMode
+	(RenderMode)(0),          // 1: libcore.RenderMode
+	(*EmptyReq)(nil),         // 2: libcore.EmptyReq
+	(*EmptyResp)(nil),        // 3: libcore.EmptyResp
+	(*ErrorResp)(nil),        // 4: libcore.ErrorResp
+	(*CoreInfo)(nil),         // 5: libcore.CoreInfo
+	(*ListCoresResp)(nil),    // 6: libcore.ListCoresResp
+	(*LoadConfigReq)(nil),    // 7: libcore.LoadConfigReq
+	(*StopReq)(nil),          // 8: libcore.StopReq
+	(*StatusResp)(nil),       // 9: libcore.StatusResp
+	(*TestReq)(nil),          // 10: libcore.TestReq
+	(*TestResp)(nil),         // 11: libcore.TestResp
+	(*QueryStatsReq)(nil),    // 12: libcore.QueryStatsReq
+	(*QueryStatsResp)(nil),   // 13: libcore.QueryStatsResp
+	(*ImportNodesReq)(nil),   // 14: libcore.ImportNodesReq
+	(*ImportNodesResp)(nil),  // 15: libcore.ImportNodesResp
+	(*ShareLinkReq)(nil),     // 16: libcore.ShareLinkReq
+	(*ShareLinkResp)(nil),    // 17: libcore.ShareLinkResp
+	(*RenderConfigReq)(nil),  // 18: libcore.RenderConfigReq
+	(*RenderConfigResp)(nil), // 19: libcore.RenderConfigResp
 }
 var file_libcore_proto_depIdxs = []int32{
-	0,  // 0: libcore.CoreInfo.kind:type_name -> libcore.CoreKind
-	6,  // 1: libcore.ListCoresResp.cores:type_name -> libcore.CoreInfo
-	1,  // 2: libcore.TestReq.mode:type_name -> libcore.TestMode
-	8,  // 3: libcore.TestReq.config:type_name -> libcore.LoadConfigReq
-	2,  // 4: libcore.RenderConfigReq.mode:type_name -> libcore.RenderMode
-	3,  // 5: libcore.LibcoreService.Exit:input_type -> libcore.EmptyReq
-	3,  // 6: libcore.LibcoreService.ListCores:input_type -> libcore.EmptyReq
-	8,  // 7: libcore.LibcoreService.Start:input_type -> libcore.LoadConfigReq
-	9,  // 8: libcore.LibcoreService.Stop:input_type -> libcore.StopReq
-	3,  // 9: libcore.LibcoreService.Status:input_type -> libcore.EmptyReq
-	11, // 10: libcore.LibcoreService.Test:input_type -> libcore.TestReq
-	13, // 11: libcore.LibcoreService.QueryStats:input_type -> libcore.QueryStatsReq
-	15, // 12: libcore.LibcoreService.ImportNodes:input_type -> libcore.ImportNodesReq
-	17, // 13: libcore.LibcoreService.ShareLink:input_type -> libcore.ShareLinkReq
-	19, // 14: libcore.LibcoreService.RenderConfig:input_type -> libcore.RenderConfigReq
-	4,  // 15: libcore.LibcoreService.Exit:output_type -> libcore.EmptyResp
-	7,  // 16: libcore.LibcoreService.ListCores:output_type -> libcore.ListCoresResp
-	5,  // 17: libcore.LibcoreService.Start:output_type -> libcore.ErrorResp
-	5,  // 18: libcore.LibcoreService.Stop:output_type -> libcore.ErrorResp
-	10, // 19: libcore.LibcoreService.Status:output_type -> libcore.StatusResp
-	12, // 20: libcore.LibcoreService.Test:output_type -> libcore.TestResp
-	14, // 21: libcore.LibcoreService.QueryStats:output_type -> libcore.QueryStatsResp
-	16, // 22: libcore.LibcoreService.ImportNodes:output_type -> libcore.ImportNodesResp
-	18, // 23: libcore.LibcoreService.ShareLink:output_type -> libcore.ShareLinkResp
-	20, // 24: libcore.LibcoreService.RenderConfig:output_type -> libcore.RenderConfigResp
-	15, // [15:25] is the sub-list for method output_type
-	5,  // [5:15] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	5,  // 0: libcore.ListCoresResp.cores:type_name -> libcore.CoreInfo
+	0,  // 1: libcore.TestReq.mode:type_name -> libcore.TestMode
+	7,  // 2: libcore.TestReq.config:type_name -> libcore.LoadConfigReq
+	1,  // 3: libcore.RenderConfigReq.mode:type_name -> libcore.RenderMode
+	2,  // 4: libcore.LibcoreService.Exit:input_type -> libcore.EmptyReq
+	2,  // 5: libcore.LibcoreService.ListCores:input_type -> libcore.EmptyReq
+	7,  // 6: libcore.LibcoreService.Start:input_type -> libcore.LoadConfigReq
+	8,  // 7: libcore.LibcoreService.Stop:input_type -> libcore.StopReq
+	2,  // 8: libcore.LibcoreService.Status:input_type -> libcore.EmptyReq
+	10, // 9: libcore.LibcoreService.Test:input_type -> libcore.TestReq
+	12, // 10: libcore.LibcoreService.QueryStats:input_type -> libcore.QueryStatsReq
+	14, // 11: libcore.LibcoreService.ImportNodes:input_type -> libcore.ImportNodesReq
+	16, // 12: libcore.LibcoreService.ShareLink:input_type -> libcore.ShareLinkReq
+	18, // 13: libcore.LibcoreService.RenderConfig:input_type -> libcore.RenderConfigReq
+	3,  // 14: libcore.LibcoreService.Exit:output_type -> libcore.EmptyResp
+	6,  // 15: libcore.LibcoreService.ListCores:output_type -> libcore.ListCoresResp
+	4,  // 16: libcore.LibcoreService.Start:output_type -> libcore.ErrorResp
+	4,  // 17: libcore.LibcoreService.Stop:output_type -> libcore.ErrorResp
+	9,  // 18: libcore.LibcoreService.Status:output_type -> libcore.StatusResp
+	11, // 19: libcore.LibcoreService.Test:output_type -> libcore.TestResp
+	13, // 20: libcore.LibcoreService.QueryStats:output_type -> libcore.QueryStatsResp
+	15, // 21: libcore.LibcoreService.ImportNodes:output_type -> libcore.ImportNodesResp
+	17, // 22: libcore.LibcoreService.ShareLink:output_type -> libcore.ShareLinkResp
+	19, // 23: libcore.LibcoreService.RenderConfig:output_type -> libcore.RenderConfigResp
+	14, // [14:24] is the sub-list for method output_type
+	4,  // [4:14] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_libcore_proto_init() }
@@ -1426,7 +1357,7 @@ func file_libcore_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_libcore_proto_rawDesc), len(file_libcore_proto_rawDesc)),
-			NumEnums:      3,
+			NumEnums:      2,
 			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,

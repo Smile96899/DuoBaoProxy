@@ -1,10 +1,10 @@
 syntax = "proto3";
 
 package libcore;
-option go_package = "hproxy/rpc/gen";
+option go_package = "duobaoproxy/rpc/gen";
 
-// LibcoreService is the control channel between the h.proxy GUI and h_core.
-// One h_core process hosts every core; the GUI picks one with core_id.
+// LibcoreService is the control channel between the DuoBao Proxy GUI and DuoBaoProxyCore.
+// One DuoBaoProxyCore process hosts every core; the GUI picks one with core_id.
 service LibcoreService {
   rpc Exit(EmptyReq) returns (EmptyResp) {}
 
@@ -32,15 +32,10 @@ message ErrorResp {
   string error = 1;
 }
 
-enum CoreKind {
-  Proxy = 0;      // local inbounds + routing (sing-box, xray)
-  SystemVPN = 1;  // replaces the system route, no routing (ikev2)
-}
-
 message CoreInfo {
-  string id = 1;                 // "sing-box" | "xray" | "ikev2"
+  string id = 1;                 // "sing-box" | "xray"
   string version = 2;
-  CoreKind kind = 3;
+  reserved 3;
   repeated string protocols = 4; // protocol ids this core can carry
   bool running = 5;
 }
@@ -125,7 +120,7 @@ message ImportNodesResp {
 
 message ShareLinkReq {
   string node_json = 1;
-  bool hproxy_format = 2; // force the lossless hproxy:// form
+  reserved 2;
   bool v2rayn_vmess = 3;  // legacy base64 JSON form for vmess
 }
 

@@ -23,13 +23,19 @@ ColumnLayout {
                 id: ta
                 text: (root.lines || []).join("\n")
                 color: Theme.fg; font.family: Theme.mono; font.pixelSize: 12
+                placeholderTextColor: Theme.fg3; selectionColor: Theme.accent; selectedTextColor: Theme.accentFg; selectByMouse: true;
                 background: null
                 padding: 0
                 wrapMode: TextEdit.NoWrap
-                onEditingFinished: {
-                    var out = text.split("\n").map(s => s.trim()).filter(s => s.length > 0)
-                    store.setSetting(root.key, out)
+                // Save shortly after typing stops, not only on focus loss, so
+                // rules survive clicking straight onto another button or page.
+                function save() {
+                    var out = text.split("\n").map(s => s.replace(/。/g, ".").trim()).filter(s => s.length > 0)
+                    if (JSON.stringify(out) !== JSON.stringify(root.lines || [])) store.setSetting(root.key, out)
                 }
+                onEditingFinished: save()
+                onTextChanged: if (activeFocus) saveTimer.restart()
+                Timer { id: saveTimer; interval: 600; onTriggered: ta.save() }
             }
         }
     }

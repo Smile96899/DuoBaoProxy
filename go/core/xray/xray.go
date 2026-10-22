@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"sync/atomic"
 
 	xnet "github.com/xtls/xray-core/common/net"
 	"github.com/xtls/xray-core/core"
@@ -19,7 +20,7 @@ import (
 	_ "github.com/xtls/xray-core/app/dispatcher"
 	_ "github.com/xtls/xray-core/app/dns"
 	_ "github.com/xtls/xray-core/app/dns/fakedns"
-	_ "github.com/xtls/xray-core/app/log"
+	applog "github.com/xtls/xray-core/app/log"
 	_ "github.com/xtls/xray-core/app/metrics"
 	_ "github.com/xtls/xray-core/app/observatory"
 	_ "github.com/xtls/xray-core/app/policy"
@@ -28,6 +29,7 @@ import (
 	_ "github.com/xtls/xray-core/app/reverse"
 	_ "github.com/xtls/xray-core/app/router"
 	_ "github.com/xtls/xray-core/app/stats"
+	clog "github.com/xtls/xray-core/common/log"
 	_ "github.com/xtls/xray-core/main/json"
 	_ "github.com/xtls/xray-core/proxy/blackhole"
 	_ "github.com/xtls/xray-core/proxy/dns"
@@ -56,7 +58,7 @@ import (
 	_ "github.com/xtls/xray-core/transport/internet/udp"
 	_ "github.com/xtls/xray-core/transport/internet/websocket"
 
-	hcore "hproxy/core"
+	hcore "duobaoproxy/core"
 )
 
 type Core struct {
@@ -66,9 +68,8 @@ type Core struct {
 
 func New() *Core { return &Core{} }
 
-func (c *Core) ID() string       { return hcore.IDXray }
-func (c *Core) Kind() hcore.Kind { return hcore.KindProxy }
-func (c *Core) Version() string  { return core.Version() }
+func (c *Core) ID() string      { return hcore.IDXray }
+func (c *Core) Version() string { return core.Version() }
 
 func (c *Core) Protocols() []string {
 	return []string{"socks", "http", "shadowsocks", "vmess", "vless", "trojan", "wireguard"}
@@ -135,11 +136,34 @@ func create(cfg []byte, enableStats bool) (*core.Instance, error) {
 	return instance, nil
 }
 
+// xray writes "console" logs through this sink so the GUI sees them.
+var logSink atomic.Value // func(string)
+
+type sinkHandler struct{}
+
+func (sinkHandler) Handle(msg clog.Message) {
+	line := msg.String()
+	if f, _ := logSink.Load().(func(string)); f != nil {
+		f(line)
+	} else {
+		_, _ = os.Stderr.WriteString(line + "\n")
+	}
+}
+
+func init() {
+	_ = applog.RegisterHandlerCreator(applog.LogType_Console, func(applog.LogType, applog.HandlerCreatorOptions) (clog.Handler, error) {
+		return sinkHandler{}, nil
+	})
+}
+
 func (c *Core) Start(ctx context.Context, opts hcore.StartOptions) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.instance != nil {
 		return hcore.ErrAlreadyRunning
+	}
+	if opts.LogWriter != nil {
+		logSink.Store(opts.LogWriter)
 	}
 	if opts.AssetDir != "" {
 		_ = os.Setenv("XRAY_LOCATION_ASSET", opts.AssetDir)

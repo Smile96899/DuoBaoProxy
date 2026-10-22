@@ -32,10 +32,10 @@ func ParseLink(link string) (*Node, error) {
 		return parseNaive(link)
 	case "hysteria2", "hy2":
 		return parseHysteria2(link)
+	case "hysteria":
+		return parseHysteria(link)
 	case "tuic":
 		return parseTUIC(link)
-	case "hproxy":
-		return parseHProxy(link)
 	}
 	return nil, ErrUnknownLink
 }
@@ -351,23 +351,10 @@ func parseTUIC(link string) (*Node, error) {
 	return n, nil
 }
 
-// hproxy://<base64url(json Node)> is our own lossless format.
-func parseHProxy(link string) (*Node, error) {
-	d, ok := decodeB64(strings.TrimPrefix(link, "hproxy://"))
-	if !ok {
-		return nil, errors.New("node: bad hproxy link")
-	}
-	var n Node
-	if err := json.Unmarshal([]byte(d), &n); err != nil {
-		return nil, err
-	}
-	return &n, n.Validate()
-}
-
 // --- writers -------------------------------------------------------------
 
 // ShareLink renders the node in the most common link format for its
-// protocol. IKEv2 and nodes with custom config fall back to hproxy://.
+// protocol, or "" for a protocol without one.
 func (n *Node) ShareLink() string {
 	switch n.Protocol {
 	case Socks, HTTP:
@@ -382,15 +369,12 @@ func (n *Node) ShareLink() string {
 		return n.naiveLink()
 	case Hysteria2:
 		return n.hysteria2Link()
+	case Hysteria:
+		return n.hysteriaLink()
 	case TUIC:
 		return n.tuicLink()
 	}
-	return n.HProxyLink()
-}
-
-func (n *Node) HProxyLink() string {
-	b, _ := json.Marshal(n)
-	return "hproxy://" + base64.RawURLEncoding.EncodeToString(b)
+	return ""
 }
 
 func (n *Node) baseURL(scheme string) *url.URL {
@@ -610,4 +594,56 @@ func (n *Node) tuicLink() string {
 // String is a short human readable summary used in logs.
 func (n *Node) String() string {
 	return fmt.Sprintf("%s %s (%s)", n.Protocol, n.DisplayName(), n.DisplayAddress())
+}
+
+// hysteria://host:port?auth=…&peer=sni&insecure=1&upmbps=&downmbps=&alpn=&obfs=xplus&obfsParam=…#name (v1)
+func parseHysteria(link string) (*Node, error) {
+	u, err := url.Parse(link)
+	if err != nil {
+		return nil, err
+	}
+	if u.Hostname() == "" || u.Port() == "" {
+		return nil, errors.New("node: hysteria needs host and port")
+	}
+	q := u.Query()
+	n := &Node{Protocol: Hysteria, Name: fragment(u), Server: u.Hostname(), Port: portOr(u, 443)}
+	n.Hysteria = &HysteriaOptions{Auth: q.Get("auth"), Obfs: q.Get("obfsParam")}
+	fmt.Sscanf(q.Get("upmbps"), "%d", &n.Hysteria.UpMbps)
+	fmt.Sscanf(q.Get("downmbps"), "%d", &n.Hysteria.DownMbps)
+	n.QUICTLS = &QUICTLS{SNI: q.Get("peer"), ALPN: q.Get("alpn"), AllowInsecure: q.Get("insecure") == "1" || q.Get("insecure") == "true"}
+	if n.QUICTLS.SNI == "" {
+		n.QUICTLS.SNI = q.Get("sni")
+	}
+	return n, nil
+}
+
+func (n *Node) hysteriaLink() string {
+	u := n.baseURL("hysteria")
+	q := url.Values{"protocol": {"udp"}}
+	if h := n.Hysteria; h != nil {
+		q.Set("auth", h.Auth)
+		if h.UpMbps > 0 {
+			q.Set("upmbps", strconv.Itoa(h.UpMbps))
+		}
+		if h.DownMbps > 0 {
+			q.Set("downmbps", strconv.Itoa(h.DownMbps))
+		}
+		if h.Obfs != "" {
+			q.Set("obfs", "xplus")
+			q.Set("obfsParam", h.Obfs)
+		}
+	}
+	if t := n.QUICTLS; t != nil {
+		if t.SNI != "" {
+			q.Set("peer", t.SNI)
+		}
+		if t.ALPN != "" {
+			q.Set("alpn", t.ALPN)
+		}
+		if t.AllowInsecure {
+			q.Set("insecure", "1")
+		}
+	}
+	u.RawQuery = q.Encode()
+	return u.String()
 }

@@ -1,4 +1,4 @@
-module hproxy
+module duobaoproxy
 
 go 1.26.0
 

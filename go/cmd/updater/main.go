@@ -13,9 +13,9 @@ import (
 
 func appBinaryName() string {
 	if runtime.GOOS == "windows" {
-		return "h.exe"
+		return "DuoBaoProxy.exe"
 	}
-	return "h"
+	return "DuoBaoProxy"
 }
 
 func main() {
@@ -47,7 +47,7 @@ func main() {
 			// 1. update files
 			Updater()
 			// 2. start
-			if os.Getenv("H_FROM_LAUNCHER") == "1" {
+			if os.Getenv("DUOBAO_FROM_LAUNCHER") == "1" {
 				Launcher()
 			} else {
 				exec.Command(appBinaryName()).Start()

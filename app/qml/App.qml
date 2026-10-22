@@ -25,9 +25,8 @@ QtObject {
     property int nextReq: 1
     property string appliedSettings: ""          // settings JSON the running core was started with
 
-    readonly property var coreInfo: cores.find(c => c.id === coreId) || {id: coreId, kind: "proxy", protocols: [], version: ""}
+    readonly property var coreInfo: cores.find(c => c.id === coreId) || {id: coreId, protocols: [], version: ""}
     readonly property bool coreHasTun: coreId === "sing-box"
-    readonly property bool coreIsVpn: coreInfo.kind === "vpn"
     readonly property var selected: { store.nodes; return store.node(selectedId) }   // re-read when any node changes
     readonly property var selectedNode: selected.node || null
     // Rabbit colour everywhere: off grey, running green, running in TUN red.
@@ -74,7 +73,7 @@ QtObject {
         var s = JSON.parse(store.settingsJson())
         s.routing = s.routing || {}
         s.tun = s.tun || {}
-        var mode = store.ui.proxy_mode || "rule"
+        var mode = store.ui.proxy_mode || "global"
         if (mode === "global") {
             s.routing.proxy_domain = []; s.routing.direct_domain = []; s.routing.proxy_ip = []; s.routing.direct_ip = []
             s.routing.custom_rules = []; s.routing.final = "proxy"
@@ -169,7 +168,7 @@ QtObject {
         shareNext()
     }
     function shareNext() {
-        if (shareQueue.length) { core.shareLink(store.nodeJson(shareQueue[0]), false); return }
+        if (shareQueue.length) { core.shareLink(store.nodeJson(shareQueue[0])); return }
         if (!shareItems.length) return
         if (shareMode === "qr") { sys.makeQrImages(shareItems.map(i => i.link)); return }
         sys.copyText(shareItems.map(i => i.link).join("\n"))
@@ -209,7 +208,7 @@ QtObject {
     // Re-test the connected node so the detail column shows a live latency.
     property Timer latencyTimer: Timer {
         interval: 5000; repeat: true
-        running: app.connected && !app.coreIsVpn
+        running: app.connected
         onTriggered: Tests.run([app.selectedId], ["url"], true)
     }
 
@@ -228,8 +227,9 @@ QtObject {
         function onCoresListed(list) { app.cores = list }
         function onLogLine(line) { app.log(line) }
         function onRendered(req, config, tags, error) {
-            var p = app.pendingTests[req]; delete app.pendingTests[req]
-            if (!p) return
+            var p = app.pendingTests[req]
+            if (!p || p.kind !== "start") return      // exports are handled by the routes page
+            delete app.pendingTests[req]
             if (error !== "") { app.busy = false; app.statusText = error; app.log("生成配置失败：" + error); return }
             app.statsTags = tags
             core.startCore(app.coreId, config, tags, sys.appDir())
@@ -237,10 +237,10 @@ QtObject {
         function onStarted(error) {
             app.busy = false
             if (error !== "") { app.statusText = error; return }
-            app.statusText = app.coreIsVpn ? "系统 VPN 已接入" : "已连接"
-            if (store.ui.mode === "system" && !app.coreIsVpn)
+            app.statusText = "已连接"
+            if (store.ui.mode === "system")
                 sys.setSystemProxy(true, store.settings.inbound.address || "127.0.0.1", store.settings.inbound.port || 2080)
-            if (!app.coreIsVpn) core.watchTraffic(app.statsTags)
+            core.watchTraffic(app.statsTags)
             sys.setTrayState(true, sys.platformName + " · " + app.nodeName(app.selectedNode))
             Tests.run([app.selectedId], ["url"], true)
         }

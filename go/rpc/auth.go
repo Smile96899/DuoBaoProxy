@@ -11,7 +11,7 @@ import (
 )
 
 // HeaderName is the metadata key the GUI sends the shared token in.
-const HeaderName = "h_auth"
+const HeaderName = "duobao_auth"
 
 type authenticator struct{ token string }
 

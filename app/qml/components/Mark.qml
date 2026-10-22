@@ -5,7 +5,7 @@ Image {
     property string look: "off"     // off | on | tun
     property int size: 28
     width: size; height: size
-    source: "qrc:/qt/qml/HProxy/res/logo-" + look + ".png"
+    source: "qrc:/qt/qml/DuoBaoProxy/res/logo-" + look + ".png"
     sourceSize: Qt.size(size * 2, size * 2)
     fillMode: Image.PreserveAspectFit
     smooth: true; mipmap: true

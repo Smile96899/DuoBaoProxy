@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"hproxy/core"
+	"duobaoproxy/core"
 )
 
 const MiB = 1024 * 1024

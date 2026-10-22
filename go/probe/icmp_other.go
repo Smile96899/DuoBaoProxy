@@ -24,7 +24,7 @@ func icmpEcho(ip net.IP, timeout time.Duration) (int32, error) {
 		return 0, err
 	}
 	defer c.Close()
-	msg := icmp.Message{Type: ipv4.ICMPTypeEcho, Body: &icmp.Echo{ID: os.Getpid() & 0xffff, Seq: 1, Data: []byte("h.proxy ping")}}
+	msg := icmp.Message{Type: ipv4.ICMPTypeEcho, Body: &icmp.Echo{ID: os.Getpid() & 0xffff, Seq: 1, Data: []byte("DuoBao Proxy ping")}}
 	b, _ := msg.Marshal(nil)
 	start := time.Now()
 	if _, err := c.WriteTo(b, &net.UDPAddr{IP: ip4}); err != nil {

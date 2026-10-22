@@ -33,7 +33,7 @@ void Store::load() {
     def("theme", "system");
     def("core", "sing-box");
     def("selected", -1);
-    def("proxy_mode", "rule");   // rule | global | direct
+    def("proxy_mode", "global"); // rule | global | direct
     def("mode", "system");       // system | tun
     def("test_url", "http://cp.cloudflare.com/");
     if (m_settings.isEmpty()) {
@@ -151,6 +151,45 @@ void Store::removeGroup(const QString &name) {
         if (m_groups[i].toMap().value("name").toString() == name) { m_groups.removeAt(i); break; }
     emit groupsChanged();
     save();
+}
+
+void Store::moveGroup(int from, int to) {
+    if (from == to || from < 0 || to < 0 || from >= m_groups.size() || to >= m_groups.size()) return;
+    m_groups.move(from, to);
+    emit groupsChanged();
+    save();
+}
+
+void Store::moveNode(int id, int targetId, bool after) {
+    if (id == targetId) return;
+    int from = -1, to = -1;
+    for (int i = 0; i < m_nodes.size(); ++i) {
+        const int nid = m_nodes[i].toMap().value("id").toInt();
+        if (nid == id) from = i;
+        if (nid == targetId) to = i;
+    }
+    if (from < 0 || to < 0) return;
+    const int dest = to + (after ? 1 : 0);          // insertion index before removal
+    if (dest == from || dest == from + 1) return;   // already in that slot
+    auto e = m_nodes.takeAt(from).toMap();
+    if (from < to) --to;
+    if (after) ++to;
+    e["group"] = m_nodes[to - (after ? 1 : 0)].toMap().value("group");
+    m_nodes.insert(to, e);
+    emit nodesChanged();
+    save();
+}
+
+void Store::moveNodeToGroup(int id, const QString &group) {
+    for (int i = 0; i < m_nodes.size(); ++i) {
+        if (m_nodes[i].toMap().value("id").toInt() != id) continue;
+        auto e = m_nodes.takeAt(i).toMap();
+        e["group"] = group;
+        m_nodes.append(e);
+        emit nodesChanged();
+        save();
+        return;
+    }
 }
 
 // key may be dotted: "routing.final", "tun.enabled", "inbound.port".

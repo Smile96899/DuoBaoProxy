@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"strings"
 
-	"hproxy/node"
-	"hproxy/render"
+	"duobaoproxy/node"
+	"duobaoproxy/render"
 )
 
 type Renderer struct{}
@@ -18,7 +18,7 @@ func New() *Renderer { return &Renderer{} }
 
 var supported = map[string]bool{
 	node.Socks: true, node.HTTP: true, node.Shadowsocks: true, node.VMess: true, node.VLESS: true,
-	node.Trojan: true, node.Hysteria2: true, node.TUIC: true,
+	node.Trojan: true, node.Hysteria2: true, node.TUIC: true, node.SSH: true, node.AnyTLS: true, node.WireGuard: true, node.Hysteria: true, node.ShadowTLS: true,
 }
 
 func (r *Renderer) Supports(protocol string) bool { return supported[protocol] }
@@ -210,6 +210,55 @@ func Outbound(n *node.Node, set *render.Settings) (render.Obj, error) {
 		out["type"], out["password"] = "trojan", n.Password
 		transport(n.Stream, out)
 		tls(n.Stream, set, out)
+	case node.SSH:
+		out["type"], out["user"] = "ssh", n.Username
+		if n.Password != "" {
+			out["password"] = n.Password
+		}
+	case node.AnyTLS:
+		out["type"], out["password"] = "anytls", n.Password
+		s := n.Stream
+		if s == nil {
+			s = &node.Stream{}
+		}
+		if s.Security == "" {
+			s.Security = "tls" // anytls is always TLS
+		}
+		tls(s, set, out)
+	case node.WireGuard:
+		// Rendered as an endpoint (sing-box 1.11+); Render moves it there.
+		w := n.WireGuard
+		peer := render.Obj{"address": n.Server, "port": n.Port, "public_key": w.PeerPublicKey, "allowed_ips": wgAllowedIPs(w.LocalAddress)}
+		if w.PreSharedKey != "" {
+			peer["pre_shared_key"] = w.PreSharedKey
+		}
+		if r := node.ReservedBytes(w.Reserved); r != nil {
+			peer["reserved"] = []any{r[0], r[1], r[2]}
+		}
+		delete(out, "server")
+		delete(out, "server_port")
+		out["type"] = "wireguard"
+		out["address"] = render.Strings(render.SplitComma(w.LocalAddress))
+		out["private_key"] = w.PrivateKey
+		if w.MTU > 0 {
+			out["mtu"] = w.MTU
+		}
+		out["peers"] = []any{peer}
+	case node.Hysteria:
+		h := n.Hysteria
+		out["type"], out["auth_str"] = "hysteria", h.Auth
+		out["up_mbps"], out["down_mbps"] = orDefault(h.UpMbps, 50), orDefault(h.DownMbps, 100)
+		if h.Obfs != "" {
+			out["obfs"] = h.Obfs
+		}
+		t := quicTLS(n.QUICTLS, false)
+		if _, ok := t["alpn"]; !ok {
+			t["alpn"] = []any{"hysteria"}
+		}
+		out["tls"] = t
+	case node.ShadowTLS:
+		// The inner shadowsocks outbound; Render adds the shadowtls one it detours through.
+		out["type"], out["method"], out["password"] = "shadowsocks", n.Method, n.ShadowTLS.SSPassword
 	case node.Hysteria2:
 		out["type"], out["password"] = "hysteria2", n.Password
 		out["tls"] = quicTLS(n.QUICTLS, true)
@@ -500,7 +549,7 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 	}
 
 	// Outbounds: chain
-	var outbounds []any
+	var outbounds, endpoints []any
 	var statsTags []string
 	muxApplied := false
 	var serverDomains []string
@@ -514,6 +563,19 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 		out["tag"] = tag
 		if i > 0 {
 			out["detour"] = render.Tag(i-1, n)
+		}
+		if nd.Protocol == node.ShadowTLS {
+			stls := shadowTLSOutbound(nd, &set, tag+"-stls")
+			if i > 0 {
+				stls["detour"] = render.Tag(i-1, n)
+			}
+			out["detour"] = tag + "-stls"
+			outbounds = append(outbounds, stls)
+		}
+		if nd.Protocol == node.WireGuard {
+			endpoints = append(endpoints, out)
+			statsTags = append([]string{tag}, statsTags...)
+			continue
 		}
 		if !muxApplied && needMux(nd, &set) {
 			out["multiplex"] = render.Obj{"enabled": true, "protocol": set.Mux.Protocol, "padding": set.Mux.Padding, "max_streams": set.Mux.Concurrency}
@@ -530,6 +592,9 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 		render.Obj{"type": "direct", "tag": "bypass"},
 	)
 	cfg["outbounds"] = outbounds
+	if len(endpoints) > 0 {
+		cfg["endpoints"] = endpoints
+	}
 
 	rb := &ruleBuilder{ruleSets: map[string]render.Obj{}, dir: set.RuleSetDir}
 
@@ -713,4 +778,45 @@ func withServer(rule render.Obj, server string) render.Obj {
 	}
 	rule["action"], rule["server"] = "route", server
 	return rule
+}
+
+// shadowTLSOutbound is the TLS-camouflage hop a shadowtls node's shadowsocks
+// outbound detours through.
+func shadowTLSOutbound(n *node.Node, set *render.Settings, tag string) render.Obj {
+	o := render.Obj{"type": "shadowtls", "tag": tag, "server": n.Server, "server_port": n.Port, "password": n.Password}
+	o["version"] = orDefault(n.ShadowTLS.Version, 3)
+	t := render.Obj{"enabled": true}
+	if s := n.Stream; s != nil {
+		if s.SNI != "" {
+			t["server_name"] = s.SNI
+		}
+		fp := s.Fingerprint
+		if fp == "" {
+			fp = set.Fingerprint
+		}
+		if fp != "" {
+			t["utls"] = render.Obj{"enabled": true, "fingerprint": fp}
+		}
+	}
+	o["tls"] = t
+	return o
+}
+
+func orDefault(v, d int) int {
+	if v == 0 {
+		return d
+	}
+	return v
+}
+
+// wgAllowedIPs routes everything into the tunnel, IPv6 only when the tunnel
+// has an IPv6 address; otherwise v6 traffic would enter and go nowhere.
+func wgAllowedIPs(local string) []any {
+	out := []any{"0.0.0.0/0"}
+	for _, a := range render.SplitComma(local) {
+		if strings.Contains(a, ":") {
+			return append(out, "::/0")
+		}
+	}
+	return out
 }
