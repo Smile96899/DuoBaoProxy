@@ -141,7 +141,7 @@ Item {
                         Label { text: modelData.process; color: Theme.fg3; font.pixelSize: 11; font.family: Theme.mono; elide: Text.ElideMiddle; Layout.fillWidth: true }
                     }
                     Seg { model: [{v: "proxy", l: "代理"}, {v: "bypass", l: "直连"}, {v: "block", l: "拦截"}]; current: modelData.outbound; onPicked: v => root.setOut(index, v) }
-                    PillButton { text: "×"; flat: true; Layout.preferredWidth: 32; onClicked: root.remove(index) }
+                    PillButton { text: "×"; flat: true; leftPadding: 0; rightPadding: 0; font.pixelSize: 16; Layout.preferredWidth: 32; onClicked: root.remove(index) }
                 }
             }
             Label { visible: apps.length === 0; anchors.centerIn: parent; text: "还没有应用规则"; color: Theme.fg3; font.pixelSize: 13 }
