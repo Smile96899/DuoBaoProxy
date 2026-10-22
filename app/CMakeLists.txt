@@ -80,7 +80,7 @@ target_compile_definitions(h PRIVATE HP_VERSION="${PROJECT_VERSION}")
 
 if(WIN32)
     set_target_properties(h PROPERTIES OUTPUT_NAME "h")
-    target_link_libraries(h PRIVATE wininet dwmapi)
+    target_link_libraries(h PRIVATE wininet dwmapi ole32 uuid)
 endif()
 
 install(TARGETS h RUNTIME DESTINATION . BUNDLE DESTINATION .)

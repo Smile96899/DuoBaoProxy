@@ -31,6 +31,12 @@ public:
     Q_INVOKABLE QString clipboardText() const;
     Q_INVOKABLE void openUrl(const QString &url);
     Q_INVOKABLE QString appDir() const;
+    // Target of a Windows shortcut (.lnk); other paths come back unchanged,
+    // and a shortcut with no file target (Store apps) gives "".
+    Q_INVOKABLE QString resolveShortcut(const QString &path) const;
+    // Programs with a shortcut on either desktop (user and Public) or in
+    // either Start Menu: [{name, path}], one per exe, sorted by name.
+    Q_INVOKABLE QVariantList installedApps() const;
     // Windows draws the title bar itself; tell it to follow the app theme.
     Q_INVOKABLE void setDarkTitleBar(QWindow *window, bool dark);
 

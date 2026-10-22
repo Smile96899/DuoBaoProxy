@@ -5,6 +5,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJSValue>
 #include <QSaveFile>
 #include <QStandardPaths>
 
@@ -153,7 +154,14 @@ void Store::removeGroup(const QString &name) {
 }
 
 // key may be dotted: "routing.final", "tun.enabled", "inbound.port".
-void Store::setSetting(const QString &key, const QVariant &value) {
+// QML hands arrays and objects over as QJSValue, which QJsonObject turns into
+// null; unwrap them into plain lists and maps before storing.
+static QVariant plain(const QVariant &value) {
+    return value.metaType() == QMetaType::fromType<QJSValue>() ? value.value<QJSValue>().toVariant() : value;
+}
+
+void Store::setSetting(const QString &key, const QVariant &v) {
+    const QVariant value = plain(v);
     const auto parts = key.split('.');
     if (parts.size() == 1) {
         m_settings[key] = value;
@@ -170,7 +178,8 @@ QString Store::settingsJson() const {
     return QString::fromUtf8(QJsonDocument(QJsonObject::fromVariantMap(m_settings)).toJson(QJsonDocument::Compact));
 }
 
-void Store::setUi(const QString &key, const QVariant &value) {
+void Store::setUi(const QString &key, const QVariant &v) {
+    const QVariant value = plain(v);
     if (m_ui.value(key) == value) return;
     m_ui[key] = value;
     emit uiChanged();

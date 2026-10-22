@@ -6,6 +6,10 @@
 #include <QDateTime>
 #include <QDesktopServices>
 #include <QDir>
+#include <QDirIterator>
+#include <QFileInfo>
+#include <QMap>
+#include <QSet>
 #include <QIcon>
 #include <QActionGroup>
 #include <QFile>
@@ -20,6 +24,7 @@
 #include <windows.h>
 #include <wininet.h>
 #include <dwmapi.h>
+#include <shlobj.h>
 #endif
 
 System::System(QObject *parent) : QObject(parent) {}
@@ -186,6 +191,84 @@ void System::setAutoStart(bool on) {
 void System::copyText(const QString &text) { QApplication::clipboard()->setText(text); }
 QString System::clipboardText() const { return QApplication::clipboard()->text(); }
 void System::openUrl(const QString &url) { QDesktopServices::openUrl(QUrl(url)); }
+
+#ifdef Q_OS_WIN
+// Reads a .lnk with an already created IShellLink; "" when it has no file target.
+static QString shortcutTarget(IShellLinkW *link, const QString &path) {
+    QString target;
+    IPersistFile *file = nullptr;
+    if (SUCCEEDED(link->QueryInterface(IID_IPersistFile, reinterpret_cast<void **>(&file)))) {
+        const std::wstring native = QDir::toNativeSeparators(path).toStdWString();
+        wchar_t buf[MAX_PATH] = {};
+        if (SUCCEEDED(file->Load(native.c_str(), STGM_READ))
+            && SUCCEEDED(link->GetPath(buf, MAX_PATH, nullptr, 0)) && buf[0])
+            target = QString::fromWCharArray(buf);
+        file->Release();
+    }
+    return target;
+}
+
+// Runs fn with a ShellLink object, initialising COM for the call if needed.
+template <typename Fn>
+static void withShellLink(Fn fn) {
+    const bool comInit = SUCCEEDED(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED));
+    IShellLinkW *link = nullptr;
+    if (SUCCEEDED(CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER, IID_IShellLinkW, reinterpret_cast<void **>(&link)))) {
+        fn(link);
+        link->Release();
+    }
+    if (comInit)
+        CoUninitialize();
+}
+#endif
+
+QString System::resolveShortcut(const QString &path) const {
+    if (!path.endsWith(QLatin1String(".lnk"), Qt::CaseInsensitive))
+        return path;
+#ifdef Q_OS_WIN
+    QString target;
+    withShellLink([&](IShellLinkW *link) { target = shortcutTarget(link, path); });
+    return target;
+#else
+    return path;
+#endif
+}
+
+QVariantList System::installedApps() const {
+    QVariantList out;
+#ifdef Q_OS_WIN
+    const QString startMenu = QStringLiteral("/Microsoft/Windows/Start Menu/Programs");
+    const QStringList dirs = {
+        QStandardPaths::writableLocation(QStandardPaths::DesktopLocation),
+        qEnvironmentVariable("PUBLIC") + QStringLiteral("/Desktop"),
+        qEnvironmentVariable("APPDATA") + startMenu,
+        qEnvironmentVariable("ProgramData") + startMenu,
+    };
+    QMap<QString, QVariantMap> byName;      // sorted, case-insensitive key
+    QSet<QString> seen;                     // lower-cased exe paths
+    withShellLink([&](IShellLinkW *link) {
+        for (const QString &dir : dirs) {
+            QDirIterator it(dir, {QStringLiteral("*.lnk")}, QDir::Files, QDirIterator::Subdirectories);
+            while (it.hasNext()) {
+                const QString lnk = it.next();
+                const QString name = QFileInfo(lnk).completeBaseName();
+                if (name.contains(QLatin1String("uninstall"), Qt::CaseInsensitive) || name.contains(QStringLiteral("卸载")))
+                    continue;
+                const QString target = shortcutTarget(link, lnk);
+                if (!target.endsWith(QLatin1String(".exe"), Qt::CaseInsensitive) || !QFileInfo::exists(target))
+                    continue;
+                if (seen.contains(target.toLower()))
+                    continue;
+                seen.insert(target.toLower());
+                byName.insert(name.toLower() + QLatin1Char('|') + target.toLower(), QVariantMap{{"name", name}, {"path", target}});
+            }
+        }
+    });
+    for (const QVariantMap &m : std::as_const(byName))
+        out.append(m);
+#endif
+    return out;
+}
 
 // ---- tray -----------------------------------------------------------------
 

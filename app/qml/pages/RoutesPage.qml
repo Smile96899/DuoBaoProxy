@@ -31,7 +31,6 @@ Item {
             Item { Layout.fillWidth: true }
             PillButton { text: "导出 JSON"; flat: true; visible: !root.compact
                 onClicked: { var req = App.nextReq++; App.pendingTests[req] = {kind: "export"}; core.renderConfig(req, App.coreId, [store.nodeJson(App.selectedId)], JSON.stringify(App.renderSettings()), 2) } }
-            PillButton { text: "应用"; highlighted: true; onClicked: App.reconnect() }
         }
         Seg {
             visible: root.compact
