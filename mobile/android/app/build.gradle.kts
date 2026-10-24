@@ -16,6 +16,10 @@ android {
         versionName = "1.0"
     }
 
+    // Release ships arm64 only (DESIGN §0). `-Pdbp.releaseAbis=x86_64` builds a release APK for the
+    // emulator to check that R8 keeps the gomobile bindings intact; the AAR must contain that ABI.
+    val releaseAbis = providers.gradleProperty("dbp.releaseAbis").orNull?.split(',')?.map(String::trim) ?: listOf("arm64-v8a")
+
     buildTypes {
         debug {
             ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
@@ -24,7 +28,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            ndk { abiFilters += "arm64-v8a" }
+            ndk { abiFilters += releaseAbis }
             // TODO(release): replace with the real release key before publishing.
             signingConfig = signingConfigs.getByName("debug")
         }
@@ -32,6 +36,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {
@@ -54,6 +59,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.coroutines.android)
+    // gomobile bind output of go/mobile (go/build_mobile.sh); package com.duobao.core.mobile.
+    implementation(files("libs/dbcore.aar"))
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     testImplementation(libs.junit)
