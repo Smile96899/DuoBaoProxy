@@ -1,0 +1,380 @@
+{
+    "groups": [
+        {
+            "name": "默认"
+        },
+        {
+            "download": 9876543210,
+            "expire": 1798732800,
+            "name": "机场A",
+            "sub_interval_min": 360,
+            "sub_url": "https://sub.example.com/api/v1/client/subscribe?token=abc",
+            "total": 214748364800,
+            "updated": "2026-10-20T08:15:30.123Z",
+            "upload": 123456789,
+            "x_unknown_header": "kept"
+        },
+        {
+            "name": "手动",
+            "sub_interval_min": 0,
+            "sub_url": ""
+        }
+    ],
+    "next_id": 9,
+    "nodes": [
+        {
+            "group": "默认",
+            "id": 3,
+            "lat": 42,
+            "node": {
+                "custom_outbound": {
+                    "tcp_fast_open": true
+                },
+                "flow": "xtls-rprx-vision",
+                "name": "东京 VLESS Reality",
+                "port": 443,
+                "protocol": "vless",
+                "server": "jp.example.com",
+                "stream": {
+                    "mux_s": 2,
+                    "net": "tcp",
+                    "pbk": "Gm5cmz9r1W2t0n8c3W7mN4h5sE3qXw2aYk1fP0dO6kQ",
+                    "sec": "tls",
+                    "sid": "6ba85179e30d4fc2",
+                    "sni": "www.microsoft.com",
+                    "spx": "/",
+                    "utls": "chrome"
+                },
+                "uuid": "b831381d-6324-4d53-ad4f-8cda48b30811",
+                "x_future_field": {
+                    "nested": [
+                        1,
+                        2,
+                        3
+                    ]
+                }
+            },
+            "res": {
+                "ai": {
+                    "chatgpt": {
+                        "ok": true,
+                        "region": "JP"
+                    },
+                    "claude": {
+                        "ok": true
+                    },
+                    "gemini": {
+                        "note": "blocked",
+                        "ok": false
+                    }
+                },
+                "dns": {
+                    "leak": false,
+                    "local": "198.51.100.1",
+                    "servers": [
+                        {
+                            "asn": "AS15169 Google LLC",
+                            "cc": "US",
+                            "country": "United States",
+                            "ip": "8.8.8.8"
+                        }
+                    ]
+                },
+                "down": {
+                    "bps": 12345678.5
+                },
+                "geo": {
+                    "cc": "JP",
+                    "ip": "203.0.113.7"
+                },
+                "icmp": {
+                    "detail": "context deadline exceeded",
+                    "err": "超时"
+                },
+                "loss": {
+                    "avg": 51,
+                    "jitter": 7,
+                    "loss": 0.1,
+                    "max": 90,
+                    "min": 40
+                },
+                "media": {
+                    "disney": {
+                        "note": "不支持",
+                        "ok": false
+                    },
+                    "netflix": {
+                        "ok": true,
+                        "region": "JP"
+                    },
+                    "youtube": {
+                        "ok": true,
+                        "region": "JP"
+                    }
+                },
+                "tcp": {
+                    "ms": 18
+                },
+                "udp": {
+                    "ms": 77
+                },
+                "up": {
+                    "bps": 2345678.25
+                },
+                "url": {
+                    "ms": 42
+                }
+            }
+        },
+        {
+            "group": "机场A",
+            "id": 4,
+            "lat": -1,
+            "node": {
+                "alter_id": 0,
+                "name": "香港 VMess WS",
+                "port": 8443,
+                "protocol": "vmess",
+                "server": "hk.example.com",
+                "stream": {
+                    "alpn": "h2,http/1.1",
+                    "ed_len": 2048,
+                    "ed_name": "Sec-WebSocket-Protocol",
+                    "host": "cdn.example.com",
+                    "insecure": true,
+                    "net": "ws",
+                    "path": "/ray?ed=2048",
+                    "sec": "tls",
+                    "sni": "cdn.example.com"
+                },
+                "uuid": "0f6c1a1e-2b3c-4d5e-8f90-a1b2c3d4e5f6",
+                "vmess_security": "auto"
+            },
+            "res": {
+                "url": {
+                    "detail": "EOF",
+                    "err": "失败"
+                }
+            }
+        },
+        {
+            "group": "机场A",
+            "id": 5,
+            "lat": 0,
+            "node": {
+                "hysteria2": {
+                    "down_mbps": 200,
+                    "hop_interval": 30,
+                    "hop_ports": "20000-30000",
+                    "obfs_password": "obfs",
+                    "up_mbps": 50
+                },
+                "password": "p@ss/word",
+                "port": 20000,
+                "protocol": "hysteria2",
+                "quic_tls": {
+                    "alpn": "h3",
+                    "insecure": true,
+                    "sni": "h2.example.com"
+                },
+                "server": "203.0.113.9"
+            }
+        },
+        {
+            "group": "手动",
+            "id": 6,
+            "lat": 120,
+            "node": {
+                "name": "WG",
+                "port": 51820,
+                "protocol": "wireguard",
+                "server": "wg.example.com",
+                "wireguard": {
+                    "local_address": "10.0.0.2/32,fd00::2/128",
+                    "mtu": 1280,
+                    "peer_public_key": "cHVibGlj",
+                    "pre_shared_key": "cHNr",
+                    "private_key": "cGFzc3dvcmQ=",
+                    "reserved": "1,2,3"
+                }
+            }
+        },
+        {
+            "group": "已删除的分组",
+            "id": 7,
+            "lat": 300,
+            "node": {
+                "method": "2022-blake3-aes-128-gcm",
+                "name": "SS \"quoted\" \\ back",
+                "password": "c2VjcmV0",
+                "plugin": "obfs-local;obfs=http;obfs-host=x",
+                "port": 8388,
+                "protocol": "shadowsocks",
+                "server": "ss.example.com",
+                "uot": 2
+            }
+        },
+        {
+            "group": "手动",
+            "id": 8,
+            "lat": 0,
+            "node": {
+                "method": "aes-256-gcm",
+                "name": "STLS",
+                "password": "stls",
+                "port": 443,
+                "protocol": "shadowtls",
+                "server": "st.example.com",
+                "shadowtls": {
+                    "ss_password": "inner",
+                    "version": 3
+                },
+                "stream": {
+                    "sni": "www.apple.com",
+                    "utls": "safari"
+                }
+            }
+        }
+    ],
+    "settings": {
+        "apps": [
+            {
+                "name": "Chrome",
+                "outbound": "proxy",
+                "process": "chrome.exe"
+            },
+            {
+                "name": "微信",
+                "outbound": "bypass",
+                "platform": "android",
+                "process": "com.tencent.mm"
+            }
+        ],
+        "clash_api_port": 9090,
+        "clash_api_secret": "s3cret",
+        "custom_inbounds": [
+            {
+                "listen": "127.0.0.1",
+                "listen_port": 1081,
+                "tag": "extra",
+                "type": "socks"
+            }
+        ],
+        "fingerprint": "chrome",
+        "geoip_path": "C:/geo/geoip.dat",
+        "geosite_path": "C:/geo/geosite.dat",
+        "inbound": {
+            "address": "0.0.0.0",
+            "domain_strategy": "prefer_ipv4",
+            "password": "p",
+            "port": 7890,
+            "sniff": 2,
+            "username": "u"
+        },
+        "log_level": "warn",
+        "mux": {
+            "concurrency": 4,
+            "default_on": true,
+            "padding": true,
+            "protocol": "smux"
+        },
+        "routing": {
+            "block_domain": [
+                "geosite:category-ads-all"
+            ],
+            "block_ip": [
+                "203.0.113.0/24"
+            ],
+            "custom_dns": {
+                "final": "x",
+                "servers": [
+                    {
+                        "address": "1.1.1.1",
+                        "tag": "x"
+                    }
+                ]
+            },
+            "custom_rules": [
+                {
+                    "domain_suffix": [
+                        "corp.example"
+                    ],
+                    "outbound": "direct"
+                }
+            ],
+            "direct_dns": "223.5.5.5",
+            "direct_dns_strategy": "prefer_ipv4",
+            "direct_domain": [
+                "geosite:cn",
+                "geosite:private"
+            ],
+            "direct_ip": [
+                "geoip:cn",
+                "geoip:private"
+            ],
+            "dns_final_out": "bypass",
+            "dns_routing": true,
+            "domain_strategy": "IPIfNonMatch",
+            "final": "bypass",
+            "outbound_domain_strategy": "prefer_ipv4",
+            "proxy_domain": [
+                "geosite:google",
+                "domain:example.org"
+            ],
+            "proxy_ip": [
+                "geoip:telegram"
+            ],
+            "remote_dns": "https://1.1.1.1/dns-query",
+            "remote_dns_strategy": "ipv4_only",
+            "underlying_dns": "local"
+        },
+        "rule_set_dir": "C:/rules",
+        "skip_cert_verify": true,
+        "tun": {
+            "enabled": false,
+            "fake_dns": true,
+            "interface_name": "duobao-tun",
+            "ipv6": true,
+            "mtu": 1500,
+            "rule_cidr": [
+                "10.0.0.0/8"
+            ],
+            "rule_process": [
+                "chrome.exe"
+            ],
+            "rule_white": true,
+            "stack": "mixed",
+            "strict_route": true
+        },
+        "x_future_setting": {
+            "a": 1.5
+        }
+    },
+    "ui": {
+        "core": "xray",
+        "layout": "portrait",
+        "mobile": {
+            "future": true
+        },
+        "mode": "tun",
+        "proxy_mode": "rule",
+        "route_parts": "rules",
+        "selected": 4,
+        "sort": "latency",
+        "test_url": "",
+        "tests": {
+            "media": {
+                "services": [
+                    "netflix",
+                    "youtube"
+                ],
+                "timeout": 10
+            },
+            "url": {
+                "timeout": 5,
+                "url": "https://www.gstatic.com/generate_204"
+            }
+        },
+        "theme": "mixed"
+    }
+}
