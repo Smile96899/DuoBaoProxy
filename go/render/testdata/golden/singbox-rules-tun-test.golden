@@ -1,0 +1,71 @@
+{
+  "dns": {
+    "final": "dns-local",
+    "independent_cache": true,
+    "servers": [
+      {
+        "tag": "dns-local",
+        "type": "local"
+      }
+    ]
+  },
+  "log": {
+    "disabled": true
+  },
+  "outbounds": [
+    {
+      "flow": "xtls-rprx-vision",
+      "server": "1.2.3.4",
+      "server_port": 443,
+      "tag": "hop-0",
+      "tls": {
+        "enabled": true,
+        "reality": {
+          "enabled": true,
+          "public_key": "SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed0ZHtgptVU",
+          "short_id": "6ba85179e30d4fc2"
+        },
+        "server_name": "www.microsoft.com",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      },
+      "type": "vless",
+      "uuid": "b831c49a-9976-4b45-b675-637e85f25bf0"
+    },
+    {
+      "detour": "hop-0",
+      "password": "password123",
+      "server": "trojan.example.com",
+      "server_port": 443,
+      "tag": "proxy",
+      "tls": {
+        "enabled": true,
+        "server_name": "trojan.example.com"
+      },
+      "transport": {
+        "service_name": "grpc",
+        "type": "grpc"
+      },
+      "type": "trojan"
+    },
+    {
+      "tag": "direct",
+      "type": "direct"
+    },
+    {
+      "tag": "bypass",
+      "type": "direct"
+    }
+  ],
+  "route": {
+    "auto_detect_interface": true,
+    "default_domain_resolver": {
+      "server": "dns-local"
+    },
+    "final": "proxy",
+    "rules": null
+  }
+}
+stats_tags: ["proxy","hop-0"]

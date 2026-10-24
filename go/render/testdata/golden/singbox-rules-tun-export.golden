@@ -1,0 +1,256 @@
+{
+  "dns": {
+    "final": "dns-remote",
+    "independent_cache": true,
+    "rules": [
+      {
+        "action": "route",
+        "rule_set": [
+          "geosite-google"
+        ],
+        "server": "dns-remote"
+      },
+      {
+        "action": "route",
+        "rule_set": [
+          "geosite-cn"
+        ],
+        "server": "dns-direct"
+      },
+      {
+        "action": "route",
+        "domain": [
+          "trojan.example.com"
+        ],
+        "server": "dns-direct"
+      },
+      {
+        "action": "reject",
+        "query_type": [
+          32,
+          33
+        ]
+      },
+      {
+        "action": "reject",
+        "domain_suffix": [
+          ".lan"
+        ]
+      },
+      {
+        "action": "route",
+        "inbound": [
+          "tun-in"
+        ],
+        "query_type": [
+          "A",
+          "AAAA"
+        ],
+        "server": "dns-fake"
+      }
+    ],
+    "servers": [
+      {
+        "detour": "proxy",
+        "domain_resolver": "dns-local",
+        "server": "dns.google",
+        "tag": "dns-remote",
+        "type": "https"
+      },
+      {
+        "domain_resolver": "dns-local",
+        "server": "doh.pub",
+        "tag": "dns-direct",
+        "type": "https"
+      },
+      {
+        "inet4_range": "198.18.0.0/15",
+        "inet6_range": "fc00::/18",
+        "tag": "dns-fake",
+        "type": "fakeip"
+      },
+      {
+        "tag": "dns-local",
+        "type": "local"
+      }
+    ]
+  },
+  "inbounds": [
+    {
+      "listen": "127.0.0.1",
+      "listen_port": 2080,
+      "tag": "mixed-in",
+      "type": "mixed"
+    },
+    {
+      "address": [
+        "172.19.0.1/28",
+        "fdfe:dcba:9876::1/126"
+      ],
+      "auto_route": true,
+      "interface_name": "duobao-tun",
+      "mtu": 9000,
+      "stack": "gvisor",
+      "strict_route": true,
+      "tag": "tun-in",
+      "type": "tun"
+    }
+  ],
+  "log": {
+    "level": "info"
+  },
+  "outbounds": [
+    {
+      "flow": "xtls-rprx-vision",
+      "server": "1.2.3.4",
+      "server_port": 443,
+      "tag": "hop-0",
+      "tls": {
+        "enabled": true,
+        "reality": {
+          "enabled": true,
+          "public_key": "SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed0ZHtgptVU",
+          "short_id": "6ba85179e30d4fc2"
+        },
+        "server_name": "www.microsoft.com",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      },
+      "type": "vless",
+      "uuid": "b831c49a-9976-4b45-b675-637e85f25bf0"
+    },
+    {
+      "detour": "hop-0",
+      "password": "password123",
+      "server": "trojan.example.com",
+      "server_port": 443,
+      "tag": "proxy",
+      "tls": {
+        "enabled": true,
+        "server_name": "trojan.example.com"
+      },
+      "transport": {
+        "service_name": "grpc",
+        "type": "grpc"
+      },
+      "type": "trojan"
+    },
+    {
+      "tag": "direct",
+      "type": "direct"
+    },
+    {
+      "tag": "bypass",
+      "type": "direct"
+    }
+  ],
+  "route": {
+    "default_domain_resolver": {
+      "server": "dns-local"
+    },
+    "final": "proxy",
+    "rule_set": [
+      {
+        "download_detour": "direct",
+        "format": "binary",
+        "tag": "geoip-cn",
+        "type": "remote",
+        "update_interval": "7d",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs"
+      },
+      {
+        "download_detour": "direct",
+        "format": "binary",
+        "tag": "geosite-cn",
+        "type": "remote",
+        "update_interval": "7d",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs"
+      },
+      {
+        "download_detour": "direct",
+        "format": "binary",
+        "tag": "geosite-google",
+        "type": "remote",
+        "update_interval": "7d",
+        "url": "https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-google.srs"
+      }
+    ],
+    "rules": [
+      {
+        "action": "sniff"
+      },
+      {
+        "action": "hijack-dns",
+        "protocol": [
+          "dns"
+        ]
+      },
+      {
+        "outbound": "bypass",
+        "process_name": [
+          "chrome.exe"
+        ]
+      },
+      {
+        "outbound": "proxy",
+        "rule_set": [
+          "geosite-google"
+        ]
+      },
+      {
+        "outbound": "bypass",
+        "rule_set": [
+          "geosite-cn"
+        ]
+      },
+      {
+        "outbound": "bypass",
+        "rule_set": [
+          "geoip-cn"
+        ]
+      },
+      {
+        "action": "reject",
+        "network": [
+          "udp"
+        ],
+        "port": [
+          135,
+          137,
+          138,
+          139,
+          5353
+        ]
+      },
+      {
+        "action": "reject",
+        "ip_cidr": [
+          "224.0.0.0/3",
+          "ff00::/8"
+        ]
+      },
+      {
+        "action": "reject",
+        "source_ip_cidr": [
+          "224.0.0.0/3",
+          "ff00::/8"
+        ]
+      },
+      {
+        "outbound": "bypass",
+        "process_name": [
+          "game.exe"
+        ]
+      },
+      {
+        "ip_cidr": [
+          "192.168.0.0/16"
+        ],
+        "outbound": "bypass"
+      }
+    ]
+  }
+}
+stats_tags: ["proxy","hop-0"]
