@@ -1,23 +1,37 @@
 # 多宝代理 DuoBao Proxy · 产品架构
 
+## 下载安装包
+
+**[⬇ 下载 Windows 安装包（x64）](https://github.com/Smile96899/DuoBaoProxy/releases/latest)**
+
+进入 Release 页面，下载 `DuoBaoProxy-<版本>-windows-x64-setup.exe` 直接运行即可，支持 Windows 10 / 11。可以用同一页面的 `SHA256SUMS.txt` 校验文件。安装包使用自签名证书，如果 SmartScreen 拦截，点「更多信息 → 仍要运行」。
+
+## 总览
+
 多宝代理由两个进程组成：Qt Quick 编写的界面 `DuoBaoProxy.exe`，和 Go 编写的核心 `DuoBaoProxyCore.exe`。两者通过本机 gRPC 通信。sing-box 和 xray 以库的形式编译进核心，不再单独启动进程。
 
-```
-┌──────────────────────── DuoBaoProxy.exe（Qt 6 / QML）────────────────────────┐
-│  pages/ 页面  ─  App.qml 状态机  ─  Tests.qml 测速调度                          │
-│        │              │                                                        │
-│   Store（data.json）  System（系统代理/自启/托盘）  CoreClient（gRPC 客户端）   │
-└───────────────────────────────────────────────────────┬────────────────────────┘
-                                                        │ gRPC / HTTP2
-                                                        │ 127.0.0.1:随机端口 + 令牌
-┌────────────────────── DuoBaoProxyCore.exe（Go）───────┴────────────────────────┐
-│  rpc  LibcoreService                                                           │
-│   ├─ node    分享链接 / 订阅 / Clash YAML  ⇄  统一节点模型                      │
-│   ├─ render  节点 + 设置  →  sing-box JSON / xray JSON                          │
-│   ├─ core    引擎接口与注册表 ── singbox（sing-box 1.14）                        │
-│   │                          └─ xray   （Xray-core 26）                          │
-│   └─ probe   延迟 / UDP / 速度 / 归属地 / 解锁 / DNS 泄露                        │
-└────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph GUI["DuoBaoProxy.exe（Qt 6 / QML）"]
+        Pages["pages/ 页面"] --> App["App.qml<br/>状态机"]
+        Pages --> Tests["Tests.qml<br/>测速调度"]
+        App --> Store["Store<br/>data.json"]
+        App --> System["System<br/>系统代理 / 自启 / 托盘"]
+        App --> Client["CoreClient<br/>gRPC 客户端"]
+        Tests --> Client
+    end
+
+    Client -- "gRPC / HTTP2<br/>127.0.0.1:随机端口 + 令牌" --> RPC
+
+    subgraph CORE["DuoBaoProxyCore.exe（Go）"]
+        RPC["rpc<br/>LibcoreService"]
+        RPC --> Node["node<br/>分享链接 / 订阅 / Clash YAML<br/>⇄ 统一节点模型"]
+        RPC --> Render["render<br/>节点 + 设置 → 引擎配置 JSON"]
+        RPC --> Engine["core<br/>引擎接口与注册表"]
+        RPC --> Probe["probe<br/>延迟 / UDP / 速度 / 归属地 / 解锁 / DNS 泄露"]
+        Engine --> SB["sing-box 1.14"]
+        Engine --> XR["Xray-core 26"]
+    end
 ```
 
 ## 设计原则
@@ -48,13 +62,10 @@ gRPC 接口（`go/rpc/gen/libcore.proto`）：
 
 **连接**
 
-```
-App.connect()
-  → RenderConfig(节点, 设置, 完整模式)       核心生成引擎配置与统计标签
-  → Start(引擎 id, 配置, 程序目录)           核心启动 sing-box 或 xray
-  → System 设置系统代理（系统代理模式）       TUN 模式由 sing-box 自己接管网卡
-  → CoreClient 每秒轮询 QueryStats            计算实时网速
-```
+1. `App.connect()` 调用 `RenderConfig`（节点、设置、完整模式），核心生成引擎配置和统计标签。
+2. `Start`（引擎 id、配置、程序目录）：核心启动 sing-box 或 xray。
+3. 系统代理模式下，`System` 设置系统代理；TUN 模式由 sing-box 自己接管网卡。
+4. `CoreClient` 每秒轮询一次 `QueryStats`，计算实时网速。
 
 设置改动后会防抖 800 ms，再自动重连生效。启动时如果发现系统代理还指向本机（上次异常退出留下的），会自动清除。
 
@@ -102,11 +113,10 @@ App.connect()
 
 ## 构建与发布
 
-```
-go/build_core.sh   → DuoBaoProxyCore.exe          (带 with_utls/with_quic/with_wireguard/with_gvisor 等 tag)
-app/build.cmd      → DuoBaoProxy.exe              (CMake + Ninja + MSVC)
-app/package.ps1    → 编译以上两者 → windeployqt 组装 → 附加运行库与 geo 数据
-                   → 签名（可选，DBP_SIGN_CERT）→ Inno Setup 生成安装包
-```
+| 脚本 | 产物 | 说明 |
+| --- | --- | --- |
+| `go/build_core.sh` | `DuoBaoProxyCore.exe` | 带 `with_utls`、`with_quic`、`with_wireguard`、`with_gvisor` 等 tag 编译 |
+| `app/build.cmd` | `DuoBaoProxy.exe` | CMake + Ninja + MSVC |
+| `app/package.ps1` | 安装包 | 编译上面两者 → windeployqt 组装 → 附加运行库和 geo 数据 → 签名（可选，`DBP_SIGN_CERT`）→ Inno Setup 打包 |
 
 版本号取自 `app/CMakeLists.txt` 的 `project(... VERSION x.y)`，打包时注入界面、核心和安装包。exe 文件属性里的版本号写在 `app/res/app.rc`，需要另外手动修改。依赖安装和分步构建见 [app/README.md](app/README.md)。
