@@ -15,3 +15,8 @@ aqtinstall.log
 app/run/core.log
 go/core.log
 cache.db
+
+# installer staging / downloads / output
+app/installer/stage/
+app/installer/cache/
+app/installer/output/

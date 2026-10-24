@@ -82,7 +82,7 @@ Item {
             Field { visible: App.coreHasTun; Layout.fillWidth: true; title: "IPv6"
                 Toggle { on: tun.ipv6 === true; onClicked: store.setSetting("tun.ipv6", !on) } }
 
-            Field { Layout.fillWidth: true; title: "版本"; detail: "多宝代理 DuoBao Proxy " + Qt.application.version
+            Field { Layout.fillWidth: true; title: "版本"; detail: "粗制滥造的v" + Qt.application.version
                 PillButton { text: "检查更新"; flat: true; onClicked: sys.openUrl("https://github.com/Smile96899/DuoBaoProxy/releases") } }
             Field { Layout.fillWidth: true; title: "数据目录"; detail: store.dataDir
                 PillButton { text: "打开"; flat: true; onClicked: sys.openUrl("file:///" + store.dataDir) } }

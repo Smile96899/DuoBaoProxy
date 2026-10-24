@@ -8,6 +8,7 @@
 #include <QGrpcHttp2Channel>
 #include <QRandomGenerator>
 #include <QRegularExpression>
+#include <QStandardPaths>
 #include <QTcpServer>
 #include <QUrl>
 
@@ -65,7 +66,10 @@ void CoreClient::launch() {
 #else
         "DuoBaoProxyCore";
 #endif
-    m_proc.setWorkingDirectory(QCoreApplication::applicationDirPath());
+    // The core writes core.log into its working directory; the install dir may be read-only.
+    const QString dataDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QDir().mkpath(dataDir);
+    m_proc.setWorkingDirectory(dataDir);
     m_proc.start(exe, {"run", "-port", QString::number(m_port), "-token", m_token});
     if (!m_proc.waitForStarted(5000)) {
         setError(QStringLiteral("无法启动核心：%1").arg(exe));
