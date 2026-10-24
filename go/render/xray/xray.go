@@ -15,6 +15,7 @@ import (
 
 	"duobaoproxy/node"
 	"duobaoproxy/render"
+	"duobaoproxy/render/singbox"
 )
 
 type Renderer struct{}
@@ -323,7 +324,14 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 		return nil, fmt.Errorf("render: empty chain")
 	}
 	test := req.Mode == render.ModeTest
-	if !test && set.TUN.Enabled {
+	// Front mode: on mobile the TUN is a sing-box front (FrontConfig) that
+	// hands everything to xray over a loopback bridge. Export leaves the
+	// bridge out and renders the plain proxy config.
+	front := req.Mode == render.ModeFull && set.Mobile() && set.TUN.Enabled
+	if front && (set.Bridge == nil || set.Bridge.Port <= 0) {
+		return nil, fmt.Errorf("render: xray TUN on mobile needs settings.bridge")
+	}
+	if !test && set.TUN.Enabled && !set.Mobile() {
 		return nil, fmt.Errorf("render: xray has no TUN inbound; use sing-box for VPN mode")
 	}
 	level := set.LogLevel
@@ -340,13 +348,38 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 
 	// Inbounds
 	var inbounds []any
-	if !test && set.Inbound.Port > 0 {
+	dnsInbounds := []any{"mixed-in"}
+	if front {
+		// The bridge: any app can reach loopback, hence the credentials.
+		// Sniffing is forced on, otherwise domain rules only ever see the
+		// IPs coming out of the TUN.
+		b := set.Bridge
+		settings := render.Obj{"udp": true, "auth": "noauth"}
+		if b.User != "" && b.Pass != "" {
+			settings["auth"] = "password"
+			settings["accounts"] = []any{render.Obj{"user": b.User, "pass": b.Pass}}
+		}
+		inbounds = append(inbounds, render.Obj{
+			"tag": "mixed-in", "protocol": "mixed", "listen": "127.0.0.1", "port": b.Port, "settings": settings,
+			"sniffing": render.Obj{
+				"enabled": true, "destOverride": []any{"http", "tls", "quic"},
+				"routeOnly": set.Inbound.Sniff != render.SniffForDestination,
+			},
+		})
+	}
+	// iOS never gets the user's local port (see render/singbox).
+	if !test && set.Inbound.Port > 0 && set.Platform != render.PlatformIOS {
 		settings := render.Obj{"udp": true, "auth": "noauth"}
 		if set.Inbound.Username != "" && set.Inbound.Password != "" {
 			settings["auth"] = "password"
 			settings["accounts"] = []any{render.Obj{"user": set.Inbound.Username, "pass": set.Inbound.Password}}
 		}
-		in := render.Obj{"tag": "mixed-in", "protocol": "mixed", "listen": set.Inbound.Address, "port": set.Inbound.Port, "settings": settings}
+		tag := "mixed-in"
+		if front {
+			tag = "user-in" // the bridge owns mixed-in
+			dnsInbounds = append(dnsInbounds, tag)
+		}
+		in := render.Obj{"tag": tag, "protocol": "mixed", "listen": set.Inbound.Address, "port": set.Inbound.Port, "settings": settings}
 		if set.Inbound.Sniff != render.SniffDisabled {
 			in["sniffing"] = render.Obj{
 				"enabled": true, "destOverride": []any{"http", "tls", "quic"},
@@ -398,11 +431,15 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 	if n > 1 {
 		outbounds = append([]any{outbounds[n-1]}, outbounds[:n-1]...)
 	}
-	outbounds = append(outbounds,
-		render.Obj{"tag": "direct", "protocol": "freedom"},
-		render.Obj{"tag": "bypass", "protocol": "freedom"},
-		render.Obj{"tag": "block", "protocol": "blackhole"},
-	)
+	freeDirect := render.Obj{"tag": "direct", "protocol": "freedom"}
+	freeBypass := render.Obj{"tag": "bypass", "protocol": "freedom"}
+	if front {
+		// Resolve sniffed domains through xray's DNS, not the system
+		// resolver (which on mobile may follow the VPN back in).
+		freeDirect["settings"] = render.Obj{"domainStrategy": "UseIP"}
+		freeBypass["settings"] = render.Obj{"domainStrategy": "UseIP"}
+	}
+	outbounds = append(outbounds, freeDirect, freeBypass, render.Obj{"tag": "block", "protocol": "blackhole"})
 	if !test {
 		outbounds = append(outbounds, render.Obj{"tag": "dns-out", "protocol": "dns"})
 	}
@@ -461,7 +498,7 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 	// Routing
 	var rules []any
 	rule := func(o render.Obj) render.Obj { o["type"] = "field"; return o }
-	rules = append(rules, rule(render.Obj{"inboundTag": []any{"mixed-in"}, "port": 53, "network": "udp", "outboundTag": "dns-out"}))
+	rules = append(rules, rule(render.Obj{"inboundTag": dnsInbounds, "port": 53, "network": "udp", "outboundTag": "dns-out"}))
 	custom, err := render.RawArray(set.Routing.CustomRules)
 	if err != nil {
 		return nil, err
@@ -496,7 +533,13 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &render.Result{Config: b, StatsTags: statsTags}, nil
+	res := &render.Result{Config: b, StatsTags: statsTags}
+	if front {
+		if res.FrontConfig, err = singbox.RenderXrayFront(set, set.Bridge.Port, set.Bridge.User, set.Bridge.Pass); err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
 
 // pinnedCert returns the hex SHA-256 of the server certificate: from the

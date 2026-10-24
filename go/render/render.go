@@ -109,6 +109,32 @@ type Settings struct {
 
 	ClashAPIPort   int    `json:"clash_api_port,omitempty"`
 	ClashAPISecret string `json:"clash_api_secret,omitempty"`
+
+	// Platform selects the target OS: "" desktop, PlatformAndroid or
+	// PlatformIOS. Only go/mobile sets it; desktop output never changes.
+	Platform string `json:"platform,omitempty"`
+	// OwnPackage is the app's Android package name, always kept out of
+	// the VPN.
+	OwnPackage string `json:"own_package,omitempty"`
+	// Bridge is the loopback inbound xray listens on behind the sing-box
+	// TUN front (mobile, TUN on). The caller picks a free port and random
+	// credentials.
+	Bridge *Bridge `json:"bridge,omitempty"`
+}
+
+const (
+	PlatformAndroid = "android"
+	PlatformIOS     = "ios"
+)
+
+// Mobile reports whether the config targets Android or iOS.
+func (s *Settings) Mobile() bool { return s.Platform != "" }
+
+// Bridge is a loopback mixed inbound with credentials.
+type Bridge struct {
+	Port int    `json:"port"`
+	User string `json:"user"`
+	Pass string `json:"pass"`
 }
 
 // Defaults fills zero values with the GUI's defaults.
@@ -121,6 +147,9 @@ func (s *Settings) Defaults() {
 	}
 	if s.TUN.Stack == "" {
 		s.TUN.Stack = "gvisor"
+		if s.Platform == PlatformIOS {
+			s.TUN.Stack = "mixed" // gvisor alone is heavy inside the Network Extension
+		}
 	}
 	if s.TUN.MTU == 0 {
 		s.TUN.MTU = 9000
@@ -158,6 +187,24 @@ type AppRule struct {
 	// path separator, the full path. Matching is case-insensitive on Windows.
 	Process  string `json:"process"`
 	Outbound string `json:"outbound"` // proxy | bypass | block
+	// Platform is "" for desktop rows and PlatformAndroid for rows whose
+	// Process is an Android package name; each side ignores the other's.
+	Platform string `json:"platform,omitempty"`
+}
+
+// PlatformApps returns the rows for the target platform: desktop rows on
+// desktop, Android rows on Android, none on iOS (no per-app routing there).
+func (s *Settings) PlatformApps() []AppRule {
+	if s.Platform == PlatformIOS {
+		return nil
+	}
+	var out []AppRule
+	for _, a := range s.Apps {
+		if a.Platform == s.Platform {
+			out = append(out, a)
+		}
+	}
+	return out
 }
 
 // Request is one render call. Chain lists the hops from the client
@@ -174,6 +221,10 @@ type Request struct {
 type Result struct {
 	Config    []byte
 	StatsTags []string
+	// FrontConfig is the sing-box TUN front feeding Config's loopback
+	// bridge (xray on mobile with TUN on), nil otherwise. Start Config
+	// first, then the front; stop in reverse.
+	FrontConfig []byte
 }
 
 // Renderer is implemented per core.

@@ -517,7 +517,8 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 
 	// Inbounds
 	var inbounds []any
-	if !test && set.Inbound.Port > 0 {
+	// iOS never gets the local port: other apps cannot rely on reaching it.
+	if !test && set.Inbound.Port > 0 && set.Platform != render.PlatformIOS {
 		in := render.Obj{"type": "mixed", "tag": "mixed-in", "listen": set.Inbound.Address, "listen_port": set.Inbound.Port}
 		if set.Inbound.Username != "" && set.Inbound.Password != "" {
 			in["users"] = []any{render.Obj{"username": set.Inbound.Username, "password": set.Inbound.Password}}
@@ -525,7 +526,10 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 		inbounds = append(inbounds, in)
 	}
 	tun := !test && set.TUN.Enabled
-	if tun {
+	mobile := set.Mobile()
+	if tun && mobile {
+		inbounds = append(inbounds, mobileTUN(&set, mobileMTU(&set), req.Mode == render.ModeExport))
+	} else if tun {
 		in := render.Obj{
 			"type": "tun", "tag": "tun-in", "interface_name": set.TUN.InterfaceName,
 			"auto_route": true, "strict_route": set.TUN.StrictRoute, "stack": set.TUN.Stack, "mtu": set.TUN.MTU,
@@ -655,18 +659,23 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 		if err != nil {
 			return nil, err
 		}
-		if set.Inbound.Sniff != render.SniffDisabled {
+		// Mobile TUN always sniffs: the VPN is the only way in, and the DNS
+		// hijack below needs the protocol.
+		if set.Inbound.Sniff != render.SniffDisabled || (tun && mobile) {
 			// sing-box 1.12+ sniffs for routing only; the old
 			// "override destination" switch has no equivalent.
 			rules = append(rules, render.Obj{"action": "sniff"})
 		}
 		rules = append(rules, render.Obj{"protocol": []any{"dns"}, "action": "hijack-dns"})
+		if tun && mobile && !set.TUN.IPv6 {
+			rules = append(rules, ipv6Reject())
+		}
 		rules = append(rules, custom...)
 		// Order decides who wins: blocking first (ads stay blocked for every
 		// app), then per-app choices, then the proxy / direct lists.
 		appendRule(&rules, withOut(rb.domainRule(render.ParseDomainRules(set.Routing.BlockDomain)), "block"))
 		appendRule(&rules, withOut(rb.ipRule(render.ParseIPRules(set.Routing.BlockIP)), "block"))
-		rules = append(rules, appRules(set.Apps)...)
+		rules = append(rules, appRules(set.PlatformApps(), set.Platform == render.PlatformAndroid, nil)...)
 		appendRule(&rules, withOut(rb.domainRule(render.ParseDomainRules(set.Routing.ProxyDomain)), "proxy"))
 		appendRule(&rules, withOut(rb.domainRule(render.ParseDomainRules(set.Routing.DirectDomain)), "bypass"))
 		appendRule(&rules, withOut(rb.ipRule(render.ParseIPRules(set.Routing.ProxyIP)), "proxy"))
@@ -681,7 +690,9 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 			if set.TUN.RuleWhite {
 				matchOut = "proxy"
 			}
-			if len(set.TUN.RuleProcess) > 0 {
+			// On mobile the process list is the VPN's include/exclude
+			// package list instead (mobileTUN).
+			if len(set.TUN.RuleProcess) > 0 && !mobile {
 				rules = append(rules, render.Obj{"process_name": render.Strings(set.TUN.RuleProcess), "outbound": matchOut})
 			}
 			if len(set.TUN.RuleCIDR) > 0 {
@@ -715,12 +726,15 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 	}
 	cfg["route"] = route
 
-	if !test && set.ClashAPIPort > 0 {
+	if !test && !mobile && set.ClashAPIPort > 0 {
 		cfg["experimental"] = render.Obj{"clash_api": render.Obj{
 			"external_controller": fmt.Sprintf("127.0.0.1:%d", set.ClashAPIPort),
 			"secret":              set.ClashAPISecret,
 			"external_ui":         "dashboard",
 		}}
+	}
+	if req.Mode == render.ModeFull {
+		addPlatformServices(cfg, &set)
 	}
 
 	// Per-node full-config override (exit node wins).
@@ -738,8 +752,10 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 // appRules turns the per-app list into process rules, one per outbound.
 // sing-box knows the process for TUN traffic and for local connections to
 // the mixed inbound, so these also work in system-proxy mode (for programs
-// that use the system proxy).
-func appRules(apps []render.AppRule) []any {
+// that use the system proxy). On Android Process is a package name and the
+// rules match package_name. rename maps the GUI outbound names onto the
+// config's tags (nil keeps them).
+func appRules(apps []render.AppRule, android bool, rename func(string) string) []any {
 	byOut := map[string][]string{}
 	var order []string
 	for _, a := range apps {
@@ -747,13 +763,21 @@ func appRules(apps []render.AppRule) []any {
 		if p == "" {
 			continue
 		}
-		if _, seen := byOut[a.Outbound]; !seen {
-			order = append(order, a.Outbound)
+		out := a.Outbound
+		if rename != nil {
+			out = rename(out)
 		}
-		byOut[a.Outbound] = append(byOut[a.Outbound], p)
+		if _, seen := byOut[out]; !seen {
+			order = append(order, out)
+		}
+		byOut[out] = append(byOut[out], p)
 	}
 	var rules []any
 	for _, out := range order {
+		if android {
+			appendRule(&rules, withOut(render.Obj{"package_name": render.Strings(byOut[out])}, out))
+			continue
+		}
 		var names, paths []string
 		for _, p := range byOut[out] {
 			if strings.ContainsAny(p, `/\`) {

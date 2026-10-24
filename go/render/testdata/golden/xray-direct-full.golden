@@ -1,0 +1,111 @@
+{
+  "dns": {
+    "servers": [
+      {
+        "address": "https://doh.pub/dns-query",
+        "skipFallback": true
+      },
+      {
+        "address": "https://dns.google/dns-query"
+      },
+      "localhost"
+    ],
+    "tag": "dns-in"
+  },
+  "inbounds": [
+    {
+      "listen": "127.0.0.1",
+      "port": 7890,
+      "protocol": "mixed",
+      "settings": {
+        "auth": "noauth",
+        "udp": true
+      },
+      "tag": "mixed-in"
+    }
+  ],
+  "log": {
+    "loglevel": "warning"
+  },
+  "outbounds": [
+    {
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "1.2.3.4",
+            "port": 443,
+            "users": [
+              {
+                "encryption": "none",
+                "flow": "xtls-rprx-vision",
+                "id": "b831c49a-9976-4b45-b675-637e85f25bf0"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "realitySettings": {
+          "fingerprint": "chrome",
+          "publicKey": "SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed0ZHtgptVU",
+          "serverName": "www.microsoft.com",
+          "shortId": "6ba85179e30d4fc2"
+        },
+        "security": "reality"
+      },
+      "tag": "proxy"
+    },
+    {
+      "protocol": "freedom",
+      "tag": "direct"
+    },
+    {
+      "protocol": "freedom",
+      "tag": "bypass"
+    },
+    {
+      "protocol": "blackhole",
+      "tag": "block"
+    },
+    {
+      "protocol": "dns",
+      "tag": "dns-out"
+    }
+  ],
+  "routing": {
+    "domainStrategy": "AsIs",
+    "rules": [
+      {
+        "inboundTag": [
+          "mixed-in"
+        ],
+        "network": "udp",
+        "outboundTag": "dns-out",
+        "port": 53,
+        "type": "field"
+      },
+      {
+        "network": "udp",
+        "outboundTag": "block",
+        "port": "135,137,138,139,5353",
+        "type": "field"
+      },
+      {
+        "ip": [
+          "224.0.0.0/3",
+          "ff00::/8"
+        ],
+        "outboundTag": "block",
+        "type": "field"
+      },
+      {
+        "network": "tcp,udp",
+        "outboundTag": "bypass",
+        "type": "field"
+      }
+    ]
+  }
+}
+stats_tags: ["proxy"]
