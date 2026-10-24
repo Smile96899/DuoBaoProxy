@@ -37,6 +37,11 @@ SolidCompression=yes
 WizardStyle=modern
 CloseApplications=force
 RestartApplications=no
+#ifdef Sign
+; "dbp" is defined on the ISCC command line by package.ps1 (/Sdbp=...).
+SignTool=dbp
+SignedUninstaller=yes
+#endif
 
 [Languages]
 Name: "chs"; MessagesFile: "ChineseSimplified.isl"

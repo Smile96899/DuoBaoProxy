@@ -1,5 +1,6 @@
 # Builds core + GUI and packs them into a Windows installer with Inno Setup.
 # Usage: powershell -ExecutionPolicy Bypass -File package.ps1
+#        set DBP_SIGN_CERT=<cert thumbprint> first to sign everything
 # Output: installer\output\DuoBaoProxy-<version>-windows-x64-setup.exe
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
@@ -45,6 +46,19 @@ foreach ($f in 'geosite.dat', 'geoip.dat') {
     Copy-Item "$Cache\$f" $Stage
 }
 
+$IsccArgs = @('/Qp', "/DAppVersion=$Version", "/DSrcDir=$Stage")
+if ($env:DBP_SIGN_CERT) {
+    # Thumbprint of a code-signing cert in CurrentUser\My. Signs the binaries here;
+    # Inno Setup signs setup.exe and the uninstaller through the same command.
+    Write-Host '== sign'
+    $SignTool = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin\10.*\x64\signtool.exe' |
+        Sort-Object FullName | Select-Object -Last 1 -ExpandProperty FullName
+    $SignArgs = @('sign', '/sha1', $env:DBP_SIGN_CERT, '/fd', 'SHA256', '/tr', 'http://timestamp.digicert.com', '/td', 'SHA256')
+    & $SignTool @SignArgs "$Stage\DuoBaoProxy.exe" "$Stage\DuoBaoProxyCore.exe"; Check 'signtool'
+    # $q is Inno's quote; real quotes get mangled passing through Windows PowerShell.
+    $IsccArgs += '/DSign', "/Sdbp=`$q$SignTool`$q $($SignArgs -join ' ') `$f"
+}
+
 Write-Host '== installer'
-& $Iscc /Qp "/DAppVersion=$Version" "/DSrcDir=$Stage" installer\DuoBaoProxy.iss; Check 'ISCC'
+& $Iscc @IsccArgs installer\DuoBaoProxy.iss; Check 'ISCC'
 Get-ChildItem installer\output\*.exe | Select-Object Name, @{n = 'MB'; e = { [math]::Round($_.Length / 1MB, 1) } }
