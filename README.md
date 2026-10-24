@@ -1,3 +1,5 @@
+<p align="right"><sub><a href="https://t.me/hyk857">关于开发者</a></sub></p>
+
 # 多宝代理 DuoBao Proxy · 产品架构
 
 ## 下载安装包
