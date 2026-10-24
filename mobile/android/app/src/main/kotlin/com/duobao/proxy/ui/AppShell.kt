@@ -26,6 +26,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.duobao.proxy.ui.screens.NodesDebugScreen
 import com.duobao.proxy.ui.screens.PlaceholderScreen
 import com.duobao.proxy.ui.theme.DbpTheme
 
@@ -38,7 +39,7 @@ fun AppShell() {
         bottomBar = { BottomBar(entry?.destination, nav) },
     ) { padding ->
         NavHost(nav, startDestination = NodesRoute, modifier = Modifier.padding(padding)) {
-            composable<NodesRoute> { PlaceholderScreen(Destination.Nodes) }
+            composable<NodesRoute> { NodesDebugScreen() }
             composable<GroupsRoute> { PlaceholderScreen(Destination.Groups) }
             composable<RoutesRoute> { PlaceholderScreen(Destination.Routes) }
             composable<LogsRoute> { PlaceholderScreen(Destination.Logs) }

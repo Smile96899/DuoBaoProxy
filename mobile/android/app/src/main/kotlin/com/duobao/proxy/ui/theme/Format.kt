@@ -1,6 +1,7 @@
 package com.duobao.proxy.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import com.duobao.proxy.tests.Tone
 import java.util.Locale
 
 /** `Theme.latColor`: 0/unknown → fg3, negative → bad, < 80 good, < 150 warn, else bad. */
@@ -30,4 +31,13 @@ fun formatBytes(n: Long): String = when {
     n < 1_048_576 -> String.format(Locale.ROOT, "%.1f KB", n / 1024.0)
     n < 1_073_741_824 -> String.format(Locale.ROOT, "%.1f MB", n / 1_048_576.0)
     else -> String.format(Locale.ROOT, "%.2f GB", n / 1_073_741_824.0)
+}
+
+/** Colour of a test-result [Tone] (`Tests.cell` colours). */
+fun DbpColors.toneColor(tone: Tone): Color = when (tone) {
+    Tone.Good -> good
+    Tone.Warn -> warn
+    Tone.Bad -> bad
+    Tone.Fg -> fg
+    Tone.Fg3 -> fg3
 }
