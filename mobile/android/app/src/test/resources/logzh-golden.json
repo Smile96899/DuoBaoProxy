@@ -1,0 +1,214 @@
+[
+ [
+  "2026-10-22 20:09:57 DEBUG[0006] [1268711528 49ms] dns: exchanged A www.google.com. 300 IN A 142.250.1.1",
+  "2026-10-22 20:09:57 调试 [1268711528 49毫秒] DNS：解析：www.google.com A → 142.250.1.1（TTL 300）"
+ ],
+ [
+  "\u001b[36mINFO\u001b[0m[0000] sing-box started (1.07s)",
+  "信息 sing-box 已启动（耗时 1.07秒）"
+ ],
+ [
+  "INFO[0000] sing-box pre-started (12ms)",
+  "信息 sing-box 预启动完成（耗时 12毫秒）"
+ ],
+ [
+  "DEBUG[0001] router: match[3] domain_suffix=google.com => route(proxy)",
+  "调试 路由：命中规则 #3：域名后缀=google.com → 代理"
+ ],
+ [
+  "DEBUG[0001] [123 5ms] router: pre-match[0] inbound=tun-in protocol=dns => hijack-dns",
+  "调试 [123 5毫秒] 路由：预匹配规则 #0：入站=tun-in 协议=dns 接管 DNS"
+ ],
+ [
+  "DEBUG[0001] [123 5ms] router: match[1] => sniff",
+  "调试 [123 5毫秒] 路由：命中规则 #1：嗅探协议"
+ ],
+ [
+  "DEBUG[0002] [99 1m5.2s] router: sniffed protocol: tls, domain: example.com",
+  "调试 [99 1分5.2秒] 路由：识别到协议 tls，域名 example.com"
+ ],
+ [
+  "DEBUG[0002] [99 2µs] router: sniffed packet protocol: quic, domain: x.com, client: chromium",
+  "调试 [99 2微秒] 路由：识别到数据包协议 quic，域名 x.com，客户端 chromium"
+ ],
+ [
+  "INFO[0003] [7 0ms] inbound/tun[tun-in]: inbound connection from 172.19.0.1:4444",
+  "信息 [7 0毫秒] 入站·TUN：新连接，来自 172.19.0.1:4444"
+ ],
+ [
+  "INFO[0003] [7 0ms] inbound/tun[tun-in]: inbound connection to 1.1.1.1:443",
+  "信息 [7 0毫秒] 入站·TUN：目标 1.1.1.1:443"
+ ],
+ [
+  "INFO[0003] [7 0ms] inbound/tun[tun-in]: inbound packet connection from 172.19.0.1:53",
+  "信息 [7 0毫秒] 入站·TUN：新 UDP 连接，来自 172.19.0.1:53"
+ ],
+ [
+  "INFO[0003] [7 0ms] inbound/mixed[mixed-in]: inbound packet connection to 8.8.8.8:53",
+  "信息 [7 0毫秒] 入站·本地端口：UDP 目标 8.8.8.8:53"
+ ],
+ [
+  "INFO[0003] [7 0ms] inbound/tun[tun-in]: inbound DNS packet from 172.19.0.1:5353",
+  "信息 [7 0毫秒] 入站·TUN：DNS 请求，来自 172.19.0.1:5353"
+ ],
+ [
+  "INFO[0003] [7 30ms] outbound/shadowsocks[proxy]: outbound connection to cp.cloudflare.com:80",
+  "信息 [7 30毫秒] 出站·代理：已连接 cp.cloudflare.com:80"
+ ],
+ [
+  "INFO[0003] [7 30ms] outbound/direct[bypass]: outbound packet connection to 1.2.3.4:53",
+  "信息 [7 30毫秒] 出站·直连：已建立 UDP 连接 1.2.3.4:53"
+ ],
+ [
+  "DEBUG[0004] [7 1s] connection: connection upload finished",
+  "调试 [7 1秒] 连接：上传完成"
+ ],
+ [
+  "DEBUG[0004] [7 1s] connection: connection download closed: use of closed network connection",
+  "调试 [7 1秒] 连接：下载已关闭：连接已关闭"
+ ],
+ [
+  "DEBUG[0004] [7 1s] connection: packet upload closed",
+  "调试 [7 1秒] 连接：UDP 上传已关闭"
+ ],
+ [
+  "ERROR[0004] [7 1s] connection: connection closed: rejected",
+  "错误 [7 1秒] 连接：连接已拦截"
+ ],
+ [
+  "ERROR[0004] [7 1s] connection: connection closed: read tcp 1.2.3.4:5->6.7.8.9:10: connection reset by peer",
+  "错误 [7 1秒] 连接：连接关闭：TCP 读取 1.2.3.4:5->6.7.8.9:10: 连接被对方重置"
+ ],
+ [
+  "ERROR[0005] [8 10s] router: open connection to 1.2.3.4:443 using outbound/vless[proxy]: dial tcp 1.2.3.4:443: i/o timeout",
+  "错误 [8 10秒] 路由：经由出站·代理连接 1.2.3.4:443 失败：TCP 连接 1.2.3.4:443: 超时"
+ ],
+ [
+  "DEBUG[0005] dns: lookup domain example.org",
+  "调试 DNS：查询域名 example.org"
+ ],
+ [
+  "DEBUG[0005] dns: lookup succeed for example.org: 1.2.3.4 5.6.7.8",
+  "调试 DNS：example.org 解析成功：1.2.3.4 5.6.7.8"
+ ],
+ [
+  "ERROR[0005] dns: lookup failed for bad.example: no such host",
+  "错误 DNS：bad.example 解析失败：找不到主机"
+ ],
+ [
+  "DEBUG[0005] [9 3ms] dns: exchange example.org. IN AAAA",
+  "调试 [9 3毫秒] DNS：查询 example.org（AAAA）"
+ ],
+ [
+  "DEBUG[0005] [9 3ms] dns: cached AAAA example.org. 120 IN AAAA 2001:db8::1",
+  "调试 [9 3毫秒] DNS：缓存：example.org AAAA → 2001:db8::1（TTL 120）"
+ ],
+ [
+  "DEBUG[0005] [9 3ms] dns: exchanged example.org. NXDOMAIN 60",
+  "调试 [9 3毫秒] DNS：解析：example.org 域名不存在（TTL 60）"
+ ],
+ [
+  "DEBUG[0005] [9 3ms] dns: cached OPT whatever",
+  "调试 [9 3毫秒] DNS：缓存：EDNS 选项"
+ ],
+ [
+  "DEBUG[0005] [9 3ms] dns: exchanged SOA a.b. 60 IN SOA x",
+  "调试 [9 3毫秒] DNS：解析：a.b SOA → x（TTL 60）"
+ ],
+ [
+  "INFO[0000] network: updated default interface wlan0, index 16",
+  "信息 网络：默认网卡：wlan0（索引 16）"
+ ],
+ [
+  "INFO[0000] network: updated network environment: gateway 10.0.2.2, gateway_mac aa:bb",
+  "信息 网络：网络环境已更新：网关 10.0.2.2，MAC aa:bb"
+ ],
+ [
+  "DEBUG[0000] reference: dns/https[dns-direct] is unreferenced, closing idle connections",
+  "调试 资源：直连 DNS 暂未使用，关闭空闲连接"
+ ],
+ [
+  "DEBUG[0000] reference: outbound/direct[bypass] is unreferenced, closing idle connections",
+  "调试 资源：出站·直连 暂未使用，关闭空闲连接"
+ ],
+ [
+  "INFO[0000] router: closing",
+  "信息 路由：closing"
+ ],
+ [
+  "INFO[0000] inbound/tun[tun-in]: started at tun0",
+  "信息 入站·TUN：已启动：tun0"
+ ],
+ [
+  "INFO[0000] inbound/mixed[mixed-in]: tcp server started at 127.0.0.1:2080",
+  "信息 入站·本地端口：TCP 服务已启动：127.0.0.1:2080"
+ ],
+ [
+  "TRACE[0000] inbound/tun[tun-in]: creating stack",
+  "跟踪 入站·TUN：正在创建网络栈"
+ ],
+ [
+  "INFO[0000] start inbound/tun[tun-in]...",
+  "信息 启动入站·TUN…"
+ ],
+ [
+  "INFO[0000] start router completed (3ms)",
+  "信息 启动路由 完成（耗时 3毫秒）"
+ ],
+ [
+  "WARN[0000] router: failed to search process: process not found for 1.2.3.4",
+  "警告 路由：查找进程失败：找不到进程： 1.2.3.4"
+ ],
+ [
+  "DEBUG[0000] router: found process path: /system/bin/app",
+  "调试 路由：进程：/system/bin/app"
+ ],
+ [
+  "DEBUG[0000] router: attempt to sniff fragmented QUIC client hello",
+  "调试 路由：尝试识别分片的 QUIC 握手"
+ ],
+ [
+  "WARN[0001] outbound/trojan[proxy]: tls: handshake failure, certificate signed by unknown authority EOF",
+  "警告 出站·代理：TLS 握手失败, 证书不受信任 连接被关闭（EOF）"
+ ],
+ [
+  "FATAL[0001] sing-box: start service: authentication failed",
+  "致命 sing-box: start service: 认证失败"
+ ],
+ [
+  "PANIC[0001] some panic",
+  "崩溃 some panic"
+ ],
+ [
+  "WARNING[0001] rule-set: something odd The operation was cancelled.",
+  "警告 规则集：something odd 操作已取消"
+ ],
+ [
+  "INFO[0001] ntp: hello wsarecv: An existing connection was forcibly closed by the remote host.",
+  "信息 时间同步：hello 连接被远程主机强制关闭"
+ ],
+ [
+  "[mobile] setup dev (android) base=/data",
+  "[mobile] setup dev (android) base=/data"
+ ],
+ [
+  "2026/10/22 20:09:57 [Warning] [123] app/dispatcher: default route for tcp:example.com",
+  "2026/10/22 20:09:57 [Warning] [123] app/dispatcher: default route for tcp:example.com"
+ ],
+ [
+  "plain text without a level",
+  "plain text without a level"
+ ],
+ [
+  "DEBUG[0006] router: match[5] process_name=chrome.exe rule_set=geosite-cn ip_is_private port=443 => route(bypass)",
+  "调试 路由：命中规则 #5：进程=chrome.exe 规则集=geosite-cn 私有 IP 端口=443 → 直连"
+ ],
+ [
+  "DEBUG[0006] router: match[6] network=udp query_type=AAAA => reject",
+  "调试 路由：命中规则 #6：网络=udp 查询类型=AAAA 拦截"
+ ],
+ [
+  "INFO[0007] [1 1h2m3s] connection: dial udp 1.1.1.1:53: network is unreachable context deadline exceeded",
+  "信息 [1 1时2分3秒] 连接：UDP 连接 1.1.1.1:53: 网络不可达 超时"
+ ]
+]
