@@ -102,6 +102,8 @@ func ShareLink(nodeJSON string, v2raynVMess bool) (string, error) {
 type RenderResult struct {
 	Config    string
 	StatsTags []string
+	// FrontConfig is the sing-box TUN front for xray on mobile, "" otherwise.
+	FrontConfig string
 }
 
 // RenderConfig renders a chain of node.Node JSON objects (client outwards,
@@ -133,5 +135,5 @@ func RenderConfig(coreID string, chainJSON []string, settingsJSON string, mode r
 	if err != nil {
 		return RenderResult{}, err
 	}
-	return RenderResult{Config: string(res.Config), StatsTags: res.StatsTags}, nil
+	return RenderResult{Config: string(res.Config), StatsTags: res.StatsTags, FrontConfig: string(res.FrontConfig)}, nil
 }

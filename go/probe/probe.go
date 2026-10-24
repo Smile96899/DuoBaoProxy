@@ -19,6 +19,11 @@ import (
 
 const MiB = 1024 * 1024
 
+// Direct dials the checks that bypass the proxy (TCP ping, loss, the local
+// half of the DNS leak test). go/mobile swaps in a dialer whose sockets are
+// kept outside the VPN; the default is a plain system dialer.
+var Direct core.Dialer = core.SystemDialer{}
+
 // HTTPClient builds an http.Client whose connections go through d.
 func HTTPClient(d core.Dialer, timeout time.Duration) *http.Client {
 	tr := &http.Transport{
@@ -57,9 +62,8 @@ func URLTest(ctx context.Context, d core.Dialer, url string, timeout time.Durati
 func TCPPing(ctx context.Context, addr string, timeout time.Duration) (int32, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	var d net.Dialer
 	start := time.Now()
-	conn, err := d.DialContext(ctx, "tcp", addr)
+	conn, err := Direct.DialContext(ctx, "tcp", addr)
 	if err != nil {
 		return 0, err
 	}

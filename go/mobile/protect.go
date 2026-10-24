@@ -1,6 +1,7 @@
 package mobile
 
 import (
+	"context"
 	"errors"
 	"net"
 	"sync"
@@ -60,4 +61,17 @@ func installXrayProtect() {
 // probe/direct paths and subscription fetching. Callers set Timeout etc.
 func protectedDialer() *net.Dialer {
 	return &net.Dialer{Control: protectControl}
+}
+
+// protectedSystemDialer is core.SystemDialer with protected sockets; it is
+// probe.Direct on mobile.
+type protectedSystemDialer struct{}
+
+func (protectedSystemDialer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
+	return protectedDialer().DialContext(ctx, network, addr)
+}
+
+func (protectedSystemDialer) ListenPacket(ctx context.Context) (net.PacketConn, error) {
+	lc := net.ListenConfig{Control: protectControl}
+	return lc.ListenPacket(ctx, "udp", "")
 }

@@ -23,6 +23,18 @@ import (
 	"duobaoproxy/core"
 )
 
+// CacheFile is the cache.db path injected into started instances that log
+// through a LogWriter. Empty keeps the desktop default under os.TempDir();
+// go/mobile points it at the app's own storage.
+var CacheFile string
+
+func cacheFilePath() string {
+	if CacheFile != "" {
+		return CacheFile
+	}
+	return filepath.Join(os.TempDir(), "duobaoproxy-singbox-cache.db")
+}
+
 type Core struct {
 	mu   sync.Mutex
 	inst *instance
@@ -84,7 +96,7 @@ func create(parent context.Context, cfg []byte, statsOutbounds []string, logFn f
 			options.Experimental.CacheFile = &option.CacheFileOptions{}
 		}
 		if options.Experimental.CacheFile.Path == "" {
-			options.Experimental.CacheFile.Path = filepath.Join(os.TempDir(), "duobaoproxy-singbox-cache.db")
+			options.Experimental.CacheFile.Path = cacheFilePath()
 		}
 		boxOptions.Options = options
 	}

@@ -20,3 +20,8 @@ cache.db
 app/installer/stage/
 app/installer/cache/
 app/installer/output/
+
+# gomobile build product (go/build_mobile.sh)
+mobile/android/app/libs/*.aar
+mobile/android/app/libs/*-sources.jar
+mobile/ios/Frameworks/

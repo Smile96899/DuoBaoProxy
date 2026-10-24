@@ -413,5 +413,5 @@ func DNSLeakTest(ctx context.Context, d core.Dialer, t time.Duration) (DNSLeak, 
 
 // localCountry asks Cloudflare, without the proxy, where this machine is.
 func localCountry(ctx context.Context, t time.Duration) string {
-	return traceLoc(ctx, core.SystemDialer{}, "www.cloudflare.com", t)
+	return traceLoc(ctx, Direct, "www.cloudflare.com", t)
 }
