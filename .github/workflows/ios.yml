@@ -74,7 +74,8 @@ jobs:
           import json, sys
           d = json.load(sys.stdin)["devices"]
           phones = [x for r, l in d.items() if "iOS" in r for x in l if x["name"].startswith("iPhone")]
-          print(sorted(phones, key=lambda x: x["name"])[-1]["udid"])')
+          pick = [x for x in phones if x["name"] in ("iPhone 16", "iPhone 16 Pro", "iPhone 15", "iPhone 15 Pro")] or [x for x in phones if "SE" not in x["name"]] or phones
+          print(pick[0]["udid"])')
           xcrun simctl boot "$UDID"
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl status_bar "$UDID" override --time 9:41 --batteryLevel 100 --cellularBars 4 --wifiBars 3

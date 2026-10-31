@@ -6,6 +6,7 @@ options:
   deploymentTarget:
     iOS: "16.0"
   createIntermediateGroups: true
+  developmentLanguage: zh-Hans
 settings:
   base:
     SWIFT_VERSION: "5.9"
@@ -24,6 +25,8 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: DuoBao Proxy
+        CFBundleDevelopmentRegion: zh-Hans
+        CFBundleLocalizations: [zh-Hans]
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen: {}

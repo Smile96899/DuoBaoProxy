@@ -267,6 +267,7 @@ final class AppModel: ObservableObject {
     }
 
     func refreshIpInfo() {
+        if DemoMode.enabled { return }
         Task {
             let info = await IpInfo.fetch()
             online = info != nil || connected

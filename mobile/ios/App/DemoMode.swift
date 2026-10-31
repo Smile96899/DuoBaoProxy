@@ -51,14 +51,14 @@ enum DemoMode {
                         "updated": .string(ISO8601DateFormatter().string(from: Date().addingTimeInterval(-3600)))])
         store.addGroup(["name": "备用机场"])
         let sample: [(String, String, String, Int)] = [
-            (Defaults.group, "🇺🇸 美国 · 纽约", "vless", 24),
-            (Defaults.group, "🇸🇬 新加坡 · 01", "vmess", 38),
-            (Defaults.group, "🇯🇵 日本 · 东京", "shadowsocks", 52),
-            ("极速云 Pro", "🇭🇰 香港 · 03", "trojan", 18),
-            ("极速云 Pro", "🇹🇼 台湾 · 01", "hysteria2", 46),
-            ("极速云 Pro", "🇩🇪 德国 · 法兰克福", "vless", 186),
-            ("备用机场", "🇬🇧 英国 · 伦敦", "trojan", -1),
-            ("备用机场", "🇷🇴 罗马尼亚", "socks", 1629),
+            (Defaults.group, "美国 · 纽约", "vless", 24),
+            (Defaults.group, "新加坡 · 01", "vmess", 38),
+            (Defaults.group, "日本 · 东京", "shadowsocks", 52),
+            ("极速云 Pro", "香港 · 03", "trojan", 18),
+            ("极速云 Pro", "台湾 · 01", "hysteria2", 46),
+            ("极速云 Pro", "德国 · 法兰克福", "vless", 186),
+            ("备用机场", "英国 · 伦敦", "trojan", -1),
+            ("备用机场", "罗马尼亚", "socks", 1629),
         ]
         for (i, s) in sample.enumerated() {
             store.addNodes([["name": .string(s.1), "protocol": .string(s.2), "server": .string("198.51.100.\(10 + i)"), "port": 443]], group: s.0)
