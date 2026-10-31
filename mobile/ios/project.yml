@@ -74,3 +74,4 @@ targets:
       - framework: Frameworks/Dbcore.xcframework
         embed: false
       - sdk: libresolv.tbd
+      - sdk: UIKit.framework
