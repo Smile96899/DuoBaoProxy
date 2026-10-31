@@ -1,0 +1,76 @@
+# XcodeGen spec — on a Mac: `brew install xcodegen && xcodegen` in mobile/ios, then open DuoBaoProxy.xcodeproj.
+# Build Frameworks/Dbcore.xcframework first: `TARGET=ios bash go/build_mobile.sh`.
+name: DuoBaoProxy
+options:
+  bundleIdPrefix: com.duobao
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    DEVELOPMENT_TEAM: ""          # fill in your Apple team id
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    ENABLE_BITCODE: NO
+targets:
+  DuoBaoProxy:
+    type: application
+    platform: iOS
+    sources:
+      - App
+      - Shared
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: DuoBao Proxy
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSCameraUsageDescription: 扫描二维码导入节点
+        NSPhotoLibraryUsageDescription: 从相册图片识别二维码
+        CFBundleURLTypes:
+          - CFBundleURLName: com.duobao.proxy.share
+            CFBundleURLSchemes: [vmess, vless, ss, ssr, trojan, hysteria, hysteria2, hy2, tuic, socks, http, wireguard, anytls, duobao]
+    entitlements:
+      path: App/DuoBaoProxy.entitlements
+      properties:
+        com.apple.developer.networking.networkextension: [packet-tunnel-provider]
+        com.apple.security.application-groups: [group.com.duobao.proxy]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.duobao.proxy
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    dependencies:
+      - target: PacketTunnel
+      - framework: Frameworks/Dbcore.xcframework
+        embed: false
+  PacketTunnel:
+    type: app-extension
+    platform: iOS
+    sources:
+      - PacketTunnel
+      - path: Shared
+        excludes: ["Store.swift", "Prefs.swift", "Rules.swift", "Countries.swift"]
+    info:
+      path: PacketTunnel/Info.plist
+      properties:
+        CFBundleDisplayName: DuoBao Proxy Tunnel
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.networkextension.packet-tunnel
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).PacketTunnelProvider
+    entitlements:
+      path: PacketTunnel/PacketTunnel.entitlements
+      properties:
+        com.apple.developer.networking.networkextension: [packet-tunnel-provider]
+        com.apple.security.application-groups: [group.com.duobao.proxy]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.duobao.proxy.tunnel
+    dependencies:
+      - framework: Frameworks/Dbcore.xcframework
+        embed: false
+      - sdk: libresolv.tbd

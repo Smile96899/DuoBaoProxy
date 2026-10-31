@@ -417,6 +417,19 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 			}
 			ss["sockopt"] = render.Obj{"dialerProxy": render.Tag(i-1, n)}
 		}
+		if set.TCPFastOpen && render.TCPProtocol(nd.Protocol) {
+			ss, _ := out["streamSettings"].(render.Obj)
+			if ss == nil {
+				ss = render.Obj{}
+				out["streamSettings"] = ss
+			}
+			so, _ := ss["sockopt"].(render.Obj)
+			if so == nil {
+				so = render.Obj{}
+				ss["sockopt"] = so
+			}
+			so["tcpFastOpen"] = true
+		}
 		if !muxApplied && needMux(nd, &set) {
 			out["mux"] = render.Obj{"enabled": true, "concurrency": set.Mux.Concurrency}
 			muxApplied = true
@@ -457,23 +470,34 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 	// DNS
 	proxyDomains := domainRule(render.ParseDomainRules(set.Routing.ProxyDomain))
 	directDomains := domainRule(render.ParseDomainRules(set.Routing.DirectDomain))
-	var dnsServers []any
-	remote := render.Obj{"address": set.Routing.RemoteDNS}
-	direct := render.Obj{"address": set.Routing.DirectDNS, "skipFallback": true}
+	var dnsServers, remote, direct []any
+	var remoteDomains, directDomainList []any
 	if set.Routing.DNSRouting {
-		if len(proxyDomains) > 0 {
-			remote["domains"] = proxyDomains
+		remoteDomains = proxyDomains
+		directDomainList = append(append([]any{}, directDomains...), serverDomains...)
+	} else {
+		directDomainList = serverDomains
+	}
+	// Every server of a list carries the list's domains; xray falls back
+	// through them in order.
+	for _, a := range render.DNSList(set.Routing.RemoteDNS, set.Routing.DoHFirst) {
+		o := render.Obj{"address": a}
+		if len(remoteDomains) > 0 {
+			o["domains"] = remoteDomains
 		}
-		if len(directDomains)+len(serverDomains) > 0 {
-			direct["domains"] = append(append([]any{}, directDomains...), serverDomains...)
+		remote = append(remote, o)
+	}
+	for _, a := range render.DNSList(set.Routing.DirectDNS, set.Routing.DoHFirst) {
+		o := render.Obj{"address": a, "skipFallback": true}
+		if len(directDomainList) > 0 {
+			o["domains"] = directDomainList
 		}
-	} else if len(serverDomains) > 0 {
-		direct["domains"] = serverDomains
+		direct = append(direct, o)
 	}
 	if set.Routing.DNSFinalOut == "bypass" {
-		dnsServers = append(dnsServers, direct, remote)
+		dnsServers = append(append(dnsServers, direct...), remote...)
 	} else {
-		dnsServers = append(dnsServers, remote, direct)
+		dnsServers = append(append(dnsServers, remote...), direct...)
 	}
 	dnsServers = append(dnsServers, "localhost")
 	dns := render.Obj{"servers": dnsServers, "tag": "dns-in"}
@@ -498,7 +522,11 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 	// Routing
 	var rules []any
 	rule := func(o render.Obj) render.Obj { o["type"] = "field"; return o }
-	rules = append(rules, rule(render.Obj{"inboundTag": dnsInbounds, "port": 53, "network": "udp", "outboundTag": "dns-out"}))
+	hijack := render.Obj{"inboundTag": dnsInbounds, "port": 53, "network": "udp", "outboundTag": "dns-out"}
+	if front && set.TUN.LooseDNSHijack {
+		hijack["ip"] = render.Strings(render.TunDNS)
+	}
+	rules = append(rules, rule(hijack))
 	custom, err := render.RawArray(set.Routing.CustomRules)
 	if err != nil {
 		return nil, err

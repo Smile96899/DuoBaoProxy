@@ -96,6 +96,12 @@ func (s *Service) QueryStats(tag string) core.Traffic {
 	return t
 }
 
+// RunningDialer dials through the running core's proxy outbound; release
+// it with the returned func. core.ErrNotRunning when nothing runs.
+func (s *Service) RunningDialer(ctx context.Context) (core.Dialer, func(), error) {
+	return s.dialerFor(ctx, "", "")
+}
+
 // dialerFor resolves the dialer a test should use: a throw-away instance
 // of coreID when config is non-empty, otherwise the running core. ctx is
 // handed to the core so a throw-away instance can carry it.

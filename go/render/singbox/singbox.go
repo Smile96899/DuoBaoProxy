@@ -585,6 +585,9 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 			out["multiplex"] = render.Obj{"enabled": true, "protocol": set.Mux.Protocol, "padding": set.Mux.Padding, "max_streams": set.Mux.Concurrency}
 			muxApplied = true
 		}
+		if set.TCPFastOpen && render.TCPProtocol(nd.Protocol) {
+			out["tcp_fast_open"] = true
+		}
 		if !node.IsIP(nd.Server) {
 			serverDomains = append(serverDomains, strings.ToLower(nd.Server))
 		}
@@ -604,8 +607,9 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 
 	// DNS
 	var dnsServers, dnsRules []any
-	remote := dnsServer("dns-remote", set.Routing.RemoteDNS, "proxy")
-	direct := dnsServer("dns-direct", set.Routing.DirectDNS, "direct")
+	// sing-box has no fallback between servers: each list's first entry.
+	remote := dnsServer("dns-remote", render.FirstDNS(set.Routing.RemoteDNS, set.Routing.DoHFirst), "proxy")
+	direct := dnsServer("dns-direct", render.FirstDNS(set.Routing.DirectDNS, set.Routing.DoHFirst), "direct")
 	local := dnsServer("dns-local", set.Routing.UnderlyingDNS, "")
 	if test {
 		dnsServers = append(dnsServers, local)
@@ -666,7 +670,11 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 			// "override destination" switch has no equivalent.
 			rules = append(rules, render.Obj{"action": "sniff"})
 		}
-		rules = append(rules, render.Obj{"protocol": []any{"dns"}, "action": "hijack-dns"})
+		hijack := render.Obj{"protocol": []any{"dns"}, "action": "hijack-dns"}
+		if tun && mobile && set.TUN.LooseDNSHijack {
+			hijack = render.Obj{"ip_cidr": render.Strings(cidrs(render.TunDNS)), "action": "hijack-dns"}
+		}
+		rules = append(rules, hijack)
 		if tun && mobile && !set.TUN.IPv6 {
 			rules = append(rules, ipv6Reject())
 		}
@@ -704,6 +712,12 @@ func (r *Renderer) Render(req render.Request) (*render.Result, error) {
 		"rules":                   rules,
 		"auto_detect_interface":   true,
 		"default_domain_resolver": render.Obj{"server": "dns-local"},
+	}
+	// A mobile test instance has no host to list interfaces with, and the app
+	// is outside its own VPN anyway: dial plainly instead of failing with
+	// "no available network interface".
+	if test && mobile {
+		route["auto_detect_interface"] = false
 	}
 	if !test {
 		final := set.Routing.Final
@@ -794,6 +808,19 @@ func appRules(apps []render.AppRule, android bool, rename func(string) string) [
 		}
 	}
 	return rules
+}
+
+// cidrs turns addresses into host prefixes.
+func cidrs(addrs []string) []string {
+	out := make([]string, len(addrs))
+	for i, a := range addrs {
+		if strings.Contains(a, ":") {
+			out[i] = a + "/128"
+		} else {
+			out[i] = a + "/32"
+		}
+	}
+	return out
 }
 
 func withServer(rule render.Obj, server string) render.Obj {

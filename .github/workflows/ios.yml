@@ -1,0 +1,95 @@
+# Compile check of the iOS app on a GitHub macOS runner (unsigned simulator build).
+# Runs on demand, and on pushes that touch the iOS app or the Go core.
+name: iOS build
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "mobile/ios/**"
+      - "go/**"
+      - ".github/workflows/ios.yml"
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go/go.mod
+          cache-dependency-path: go/go.sum
+
+      - name: Install gomobile and xcodegen
+        run: |
+          go install golang.org/x/mobile/cmd/gomobile@latest golang.org/x/mobile/cmd/gobind@latest
+          brew install xcodegen
+
+      - name: Build Dbcore.xcframework
+        run: |
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          gomobile init
+          TARGET=ios bash go/build_mobile.sh
+
+      - name: Generate Xcode project
+        working-directory: mobile/ios
+        run: xcodegen
+
+      - name: Build for the simulator (no signing)
+        working-directory: mobile/ios
+        run: |
+          set -o pipefail
+          xcodebuild -project DuoBaoProxy.xcodeproj -scheme DuoBaoProxy             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator'             -derivedDataPath build CODE_SIGNING_ALLOWED=NO build 2>&1 | tee build.log | grep -E "error:|BUILD" || true
+          grep -q "BUILD SUCCEEDED" build.log
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: mobile/ios/build.log
+          if-no-files-found: ignore
+
+      - name: Screenshots on the simulator
+        working-directory: mobile/ios
+        run: |
+          APP=$(find build/Build/Products -path '*iphonesimulator*' -name DuoBaoProxy.app | head -1)
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          d = json.load(sys.stdin)["devices"]
+          phones = [x for r, l in d.items() if "iOS" in r for x in l if x["name"].startswith("iPhone")]
+          print(sorted(phones, key=lambda x: x["name"])[-1]["udid"])')
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl status_bar "$UDID" override --time 9:41 --batteryLevel 100 --cellularBars 4 --wifiBars 3
+          xcrun simctl install "$UDID" "$APP"
+          mkdir -p shots
+          shot() {
+            name=$1; shift
+            xcrun simctl terminate "$UDID" com.duobao.proxy >/dev/null 2>&1 || true
+            xcrun simctl launch "$UDID" com.duobao.proxy -demo "$@" >/dev/null
+            sleep 5
+            xcrun simctl io "$UDID" screenshot "shots/$name.png" >/dev/null
+          }
+          for look in light dark; do
+            xcrun simctl ui "$UDID" appearance $look
+            shot "$look-01-首页" -tab home
+            shot "$look-02-订阅" -tab subs
+            shot "$look-03-规则" -tab rules
+            shot "$look-04-设置" -tab settings
+            shot "$look-05-DNS" -tab settings -page dns
+            shot "$look-06-内核" -tab settings -page core
+            shot "$look-07-订阅更新" -tab settings -page subUpdate
+            shot "$look-08-备份与恢复" -tab settings -page backup
+            shot "$look-09-连接日志" -tab settings -page logs
+            shot "$look-10-关于" -tab settings -page about
+            shot "$look-11-说明页" -tab settings -info 按需连接
+          done
+          ls shots
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: mobile/ios/shots

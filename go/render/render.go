@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"unicode"
 
 	"duobaoproxy/node"
 )
@@ -64,6 +65,10 @@ type Settings struct {
 		RuleWhite     bool     `json:"rule_white,omitempty"` // matched → proxy, else bypass
 		RuleProcess   []string `json:"rule_process,omitempty"`
 		RuleCIDR      []string `json:"rule_cidr,omitempty"`
+		// LooseDNSHijack (mobile) answers only queries sent to the
+		// tunnel's own DNS address; DNS aimed at other servers is routed
+		// like any other traffic. Off (default) hijacks all DNS.
+		LooseDNSHijack bool `json:"loose_dns_hijack,omitempty"`
 	} `json:"tun"`
 
 	Routing struct {
@@ -80,12 +85,17 @@ type Settings struct {
 		OutboundDomainStrategy string          `json:"outbound_domain_strategy,omitempty"`
 
 		DNSRouting        bool   `json:"dns_routing,omitempty"`
+		// RemoteDNS and DirectDNS may list several servers separated by
+		// newlines or commas (DNSList); sing-box uses the first.
 		RemoteDNS         string `json:"remote_dns,omitempty"`
 		RemoteDNSStrategy string `json:"remote_dns_strategy,omitempty"`
 		DirectDNS         string `json:"direct_dns,omitempty"`
 		DirectDNSStrategy string `json:"direct_dns_strategy,omitempty"`
 		DNSFinalOut       string `json:"dns_final_out,omitempty"` // proxy | bypass
 		UnderlyingDNS     string `json:"underlying_dns,omitempty"`
+		// DoHFirst moves encrypted servers (https, h3, tls, quic) ahead of
+		// plain ones in each DNS list.
+		DoHFirst bool `json:"doh_first,omitempty"`
 		// CustomDNS replaces the whole generated dns object when set.
 		CustomDNS json.RawMessage `json:"custom_dns,omitempty"`
 	} `json:"routing"`
@@ -96,6 +106,9 @@ type Settings struct {
 		Concurrency int    `json:"concurrency,omitempty"`
 		DefaultOn   bool   `json:"default_on,omitempty"`
 	} `json:"mux"`
+
+	// TCPFastOpen enables TFO on the proxy's TCP dials.
+	TCPFastOpen bool `json:"tcp_fast_open,omitempty"`
 
 	// TLS defaults applied when the node leaves them empty.
 	Fingerprint    string `json:"fingerprint,omitempty"`
@@ -135,6 +148,58 @@ type Bridge struct {
 	Port int    `json:"port"`
 	User string `json:"user"`
 	Pass string `json:"pass"`
+}
+
+// TunDNS are the DNS addresses a mobile VPN hands to the OS: the address
+// after the TUN's own (172.19.0.1/28, fdfe:dcba:9876::1/126).
+var TunDNS = []string{"172.19.0.2", "fdfe:dcba:9876::2"}
+
+// DNSList splits a DNS setting into servers (newlines, commas or spaces),
+// dropping blanks and duplicates; with dohFirst, encrypted servers move
+// ahead of plain ones, each group keeping its order.
+func DNSList(s string, dohFirst bool) []string {
+	var enc, plain []string
+	seen := map[string]bool{}
+	for _, f := range strings.FieldsFunc(s, func(r rune) bool { return r == ',' || unicode.IsSpace(r) }) {
+		if seen[f] {
+			continue
+		}
+		seen[f] = true
+		if dohFirst && encryptedDNS(f) {
+			enc = append(enc, f)
+		} else {
+			plain = append(plain, f)
+		}
+	}
+	return append(enc, plain...)
+}
+
+func encryptedDNS(addr string) bool {
+	l := strings.ToLower(addr)
+	for _, p := range []string{"https://", "h3://", "tls://", "quic://"} {
+		if strings.HasPrefix(l, p) {
+			return true
+		}
+	}
+	return false
+}
+
+// FirstDNS is DNSList's first entry, "" for none.
+func FirstDNS(s string, dohFirst bool) string {
+	if l := DNSList(s, dohFirst); len(l) > 0 {
+		return l[0]
+	}
+	return ""
+}
+
+// TCPProtocol reports whether a protocol dials the server over TCP (the
+// QUIC and WireGuard ones do not, so TFO does not apply).
+func TCPProtocol(protocol string) bool {
+	switch protocol {
+	case node.Hysteria2, node.Hysteria, node.TUIC, node.WireGuard:
+		return false
+	}
+	return true
 }
 
 // Defaults fills zero values with the GUI's defaults.
