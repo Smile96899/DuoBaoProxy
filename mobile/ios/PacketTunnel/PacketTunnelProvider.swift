@@ -187,7 +187,7 @@ final class TunnelHost: NSObject, DBCMobileHostProtocol {
         monitor = nil
     }
 
-    private static func report(_ path: NWPath, to l: DBCMobileNetworkListener?) {
+    private static func report(_ path: Network.NWPath, to l: DBCMobileNetworkListener?) {
         guard let l else { return }
         let iface = path.availableInterfaces.first { !$0.name.hasPrefix("utun") && $0.type != .loopback }
         guard path.status == .satisfied, let iface else {
@@ -199,7 +199,7 @@ final class TunnelHost: NSObject, DBCMobileHostProtocol {
 
     // MARK: interfaces / owner
 
-    func interfacesJSON() throws -> String {
+    func interfacesJSON(_ error: NSErrorPointer) -> String {
         let interfaces = monitor?.currentPath.availableInterfaces ?? []
         let list: [JSON] = interfaces.filter { !$0.name.hasPrefix("utun") }.map { i in
             let type: String
@@ -223,7 +223,7 @@ final class TunnelHost: NSObject, DBCMobileHostProtocol {
     }
 
     /// iOS cannot map connections to apps; Go treats a missing uid as "not found".
-    func findOwnerJSON(_ proto: Int32, src: String?, sport: Int32, dst: String?, dport: Int32) throws -> String {
+    func findOwnerJSON(_ proto: Int32, src: String?, sport: Int32, dst: String?, dport: Int32, error: NSErrorPointer) -> String {
         "{}"
     }
 

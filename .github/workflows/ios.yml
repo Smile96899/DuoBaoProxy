@@ -26,7 +26,15 @@ jobs:
           go install golang.org/x/mobile/cmd/gomobile@latest golang.org/x/mobile/cmd/gobind@latest
           brew install xcodegen
 
+      - name: Cache Dbcore.xcframework
+        id: fwcache
+        uses: actions/cache@v4
+        with:
+          path: mobile/ios/Frameworks/Dbcore.xcframework
+          key: dbcore-${{ hashFiles('go/**/*.go', 'go/go.sum', 'go/build_mobile.sh') }}
+
       - name: Build Dbcore.xcframework
+        if: steps.fwcache.outputs.cache-hit != 'true'
         run: |
           export PATH="$(go env GOPATH)/bin:$PATH"
           gomobile init
