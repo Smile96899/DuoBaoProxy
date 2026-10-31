@@ -46,6 +46,7 @@ targets:
       - target: PacketTunnel
       - framework: Frameworks/Dbcore.xcframework
         embed: false
+      - sdk: libresolv.tbd
   PacketTunnel:
     type: app-extension
     platform: iOS
