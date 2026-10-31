@@ -78,6 +78,7 @@ struct HomeView: View {
                     Circle().fill(statusColor).frame(width: 8, height: 8)
                     Text(proxyModes.first { $0.0 == model.prefs.proxyMode }?.1 ?? "全局")
                         .font(.system(size: 15, weight: .semibold)).foregroundStyle(c.fg)
+                        .lineLimit(1).fixedSize()
                     Image(systemName: "chevron.down").font(.system(size: 12, weight: .semibold)).foregroundStyle(c.fg2)
                 }
                 .padding(.horizontal, 14).frame(height: 44)
