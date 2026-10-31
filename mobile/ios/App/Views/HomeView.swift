@@ -65,6 +65,7 @@ struct HomeView: View {
         HStack(spacing: 10) {
             Image("logo").resizable().scaledToFit().frame(width: 40, height: 40).clipShape(Circle())
             Text("DuoBao Proxy").font(.system(size: 21, weight: .bold)).foregroundStyle(c.fg)
+                .lineLimit(1).minimumScaleFactor(0.7).layoutPriority(1)
             Spacer()
             Menu {
                 ForEach(proxyModes, id: \.0) { m, l in
