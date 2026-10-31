@@ -20,7 +20,7 @@ struct SettingSwitch: Identifiable, Hashable {
     }
 
     /// A `settings.a.b` boolean (reconnects when connected).
-    static func setting(_ title: String, _ path: String, _ def: Bool = false, invert: Bool = false, _ note: String) -> SettingSwitch {
+    static func setting(_ title: String, _ path: String, _ note: String, def: Bool = false, invert: Bool = false) -> SettingSwitch {
         SettingSwitch(title: title, note: note, get: { m in
             let p = path.split(separator: ".").map(String.init)
             let v = p.count == 1 ? m.store.settings[p[0]] : m.store.settings[p[0]][p[1]]
@@ -41,7 +41,7 @@ enum Switches {
         get: { Rules.enabled($0.store.settings, Rules.presets[1]) },
         set: { m, on in m.setSettings(Rules.toggle(m.store.settings, Rules.presets[1], on: on).map { ("routing." + $0.key, JSON.strings($0.value)) }) })
     static let autoSwitch = SettingSwitch.ui("自动切换最快节点", Prefs.autoSwitchKey, false, "开启后节点变慢自动切换，关闭则固定所选节点")
-    static let dnsRouting = SettingSwitch.setting("DNS 分流", "routing.dns_routing", true, "开启后国内外分别解析，关闭则统一解析")
+    static let dnsRouting = SettingSwitch.setting("DNS 分流", "routing.dns_routing", "开启后国内外分别解析，关闭则统一解析", def: true)
     static let dohFirst = SettingSwitch.setting("DoH 优先", "routing.doh_first", "开启后优先用加密 DNS，关闭则按列表顺序")
     static let fakeIP = SettingSwitch.setting("Fake-IP", "tun.fake_dns", "开启后连接更快但少数应用不兼容，关闭则兼容最好")
     static let mux = SettingSwitch.setting("多路复用", "mux.default_on", "开启后减少握手更快，关闭则兼容所有节点")
