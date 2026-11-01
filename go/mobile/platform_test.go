@@ -212,12 +212,6 @@ func (h *fakeHost) FindOwnerJSON(proto int32, src string, sport int32, dst strin
 	h.ownerArgs = fmt.Sprintf("%d %s %d %s %d", proto, src, sport, dst, dport)
 	return h.owner, nil
 }
-func (h *fakeHost) setInterfaces(s string) {
-	h.mu.Lock()
-	h.interfaces = s
-	h.mu.Unlock()
-}
-
 // fakeNetworkManager mimics route.NetworkManager.UpdateInterfaces for a
 // platform with UsePlatformNetworkInterfaces (route/network.go:266-310).
 type fakeNetworkManager struct {

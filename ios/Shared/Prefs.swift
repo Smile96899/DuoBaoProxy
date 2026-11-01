@@ -23,7 +23,6 @@ struct Prefs {
     // 订阅
     var subAuto: Bool { bool(Self.subAutoKey, true) }
     var subIntervalH: Int { int(Self.subIntervalKey, 24) }
-    var subWifiOnly: Bool { bool(Self.subWifiOnlyKey, false) }
     var subViaProxy: Bool { bool(Self.subViaProxyKey, false) }
     var subUserAgent: String { ui[Self.subUaKey].string }
     var clipDetect: Bool { bool(Self.clipDetectKey, true) }
@@ -32,7 +31,6 @@ struct Prefs {
     // 通知
     var notifyState: Bool { bool(Self.notifyStateKey, true) }
     var notifyExpire: Bool { bool(Self.notifyExpireKey, true) }
-    var notifyExpireDays: Int { int(Self.notifyExpireDaysKey, 3) }
     var notifyTraffic: Bool { bool(Self.notifyTrafficKey, true) }
 
     // 备份

@@ -10,15 +10,6 @@ data class NodeSection(val group: String, val nodes: List<NodeEntry>)
 
 /** The node list of `NodesPage.qml:272-301`. Pure. */
 object NodeList {
-    /** `ui.sort` values and labels (NP:356-360). */
-    val sorts = listOf(
-        "default" to "默认排序",
-        "latency" to "按延迟",
-        "speed" to "按速度",
-        "geo" to "按地区",
-        "name" to "按名称",
-    )
-
     /**
      * Groups in store order, then pseudo-groups for nodes whose group no longer exists. With a
      * [query], nodes match on `title + server + group` (case-insensitive) and empty groups are

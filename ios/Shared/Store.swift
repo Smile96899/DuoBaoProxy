@@ -23,7 +23,6 @@ struct NodeGroup: Identifiable, Equatable {
     var id: String { name }
     var name: String { json["name"].string }
     var subUrl: String { json["sub_url"].string }
-    var subIntervalMin: Int { json["sub_interval_min"].int(0) }
     var updated: String? { json["updated"].isNull ? nil : json["updated"].string }
     var upload: Int64? { json["upload"].int64 }
     var download: Int64? { json["download"].int64 }
@@ -129,14 +128,6 @@ final class Store: ObservableObject {
         return n
     }
 
-    @discardableResult
-    func addNode(_ node: JSON, group: String) -> Int {
-        guard !node.isEmptyObject else { return -1 }
-        let id = nextId
-        addNodes([node], group: group)
-        return id
-    }
-
     /// Shallow merge of `patch` into the entry (not into `node`).
     func updateNode(_ id: Int, patch: JSON) {
         guard let i = nodeList.firstIndex(where: { $0["id"].int(-1) == id }) else { return }
@@ -152,13 +143,6 @@ final class Store: ObservableObject {
 
     func removeGroupNodes(_ group: String) {
         nodeList.removeAll { $0["group"].string == group }
-        commitNodes()
-    }
-
-    func setNodesGroup(_ ids: Set<Int>, group: String) {
-        for i in nodeList.indices where ids.contains(nodeList[i]["id"].int(-1)) {
-            nodeList[i]["group"] = .string(group)
-        }
         commitNodes()
     }
 

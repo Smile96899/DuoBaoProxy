@@ -16,8 +16,6 @@ object I18n {
     var lang by mutableStateOf("zh")
         private set
 
-    val english: Boolean get() = lang == "en"
-
     /** Applies 设置 › 语言: `zh`, `en`, or `system` (Chinese for a Chinese system locale). */
     fun apply(pref: String) {
         val l = when (pref) {

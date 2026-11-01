@@ -121,10 +121,6 @@ object TestKinds {
         return JsonObject(all)
     }
 
-    /** `Tests.resetOpts`: the new `ui.tests` object without [k] (the caller also clears `test_url` for url). */
-    fun withoutOpts(ui: JsonObject, k: String): JsonObject =
-        JsonObject(LinkedHashMap(ui["tests"] as? JsonObject ?: EMPTY).apply { remove(k) })
-
     // ---- JS value semantics used by the QML ----
 
     fun jsTruthy(v: JsonElement?): Boolean = when (v) {

@@ -78,15 +78,6 @@ func Exist(path string) bool {
 	return err == nil
 }
 
-func FindExist(paths []string) string {
-	for _, path := range paths {
-		if Exist(path) {
-			return path
-		}
-	}
-	return ""
-}
-
 func Mv(src, dst string) error {
 	s, err := os.Stat(src)
 	if err != nil {

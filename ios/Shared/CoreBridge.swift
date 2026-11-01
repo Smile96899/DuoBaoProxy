@@ -80,11 +80,6 @@ enum Core {
         return try value(DBCMobileShareLink(node.encoded(), v2rayN, &err), err)
     }
 
-    static func normalize(_ node: JSON) throws -> JSON {
-        var err: NSError?
-        return try JSON.parse(try value(DBCMobileNormalizeNode(node.encoded(), &err), err))
-    }
-
     // MARK: subscriptions
 
     struct Fetched { let body: String; let userInfo: String; let status: Int }
@@ -160,11 +155,6 @@ enum Core {
     static func decodeQR(_ image: Data) throws -> String {
         var err: NSError?
         return try value(DBCMobileDecodeQR(image, &err), err)
-    }
-
-    static func encodeQR(_ text: String, size: Int32 = 480) throws -> Data {
-        var err: NSError?
-        return try value(DBCMobileEncodeQR(text, size, &err), err)
     }
 }
 

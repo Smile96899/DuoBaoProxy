@@ -19,6 +19,4 @@ enum AppGroup {
         try? FileManager.default.createDirectory(at: u, withIntermediateDirectories: true)
         return u
     }
-
-    static let userAgentDefault = "DuoBaoProxy"
 }

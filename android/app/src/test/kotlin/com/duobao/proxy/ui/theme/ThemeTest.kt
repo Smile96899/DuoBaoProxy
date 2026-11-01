@@ -32,13 +32,6 @@ class ThemeTest {
     }
 
     @Test
-    fun lookColours() {
-        assertEquals(dark.bad, dark.lookColor("tun"))
-        assertEquals(dark.accent, dark.lookColor("on"))
-        assertEquals(dark.fg3, dark.lookColor("off"))
-    }
-
-    @Test
     fun bytes() {
         assertEquals("1023 B", formatBytes(1023))
         assertEquals("1.0 KB", formatBytes(1024))

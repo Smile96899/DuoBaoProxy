@@ -100,7 +100,6 @@ class AppController private constructor(private val app: Application, val store:
     val session: StateFlow<Session?> = _session.asStateFlow()
 
     /** Whether any activity of the app is started (live latency only runs then). */
-    val uiVisible: StateFlow<Boolean> = _uiVisible.asStateFlow()
 
     /**
      * Non-null while the VPN permission dialog must be shown: the Activity launches this intent
@@ -609,9 +608,6 @@ class AppController private constructor(private val app: Application, val store:
         if (prefs.launchConnect && !_connected.value && !_busy.value && currentSelected() >= 0) connectNow(fromSystem = false)
     }
 
-    /** One live latency test now (the UI's refresh); no-op when disconnected. */
-    fun testLatencyNow() = launch { _session.value?.let { liveLatencyOnce(it) } }
-
     // ---- settings → reconnect (critic A9) ------------------------------------------------------
 
     private fun watchSettings() {
@@ -721,11 +717,6 @@ class AppController private constructor(private val app: Application, val store:
         dropMissingSelection()
         autoSelect()
         ImportOutcome(name, n, errors, msg)
-    }
-
-    /** 全部更新: every subscription group, one after another. */
-    fun updateAllSubscriptions() = launch {
-        for (g in store.groups.value) if (g.subUrl.isNotEmpty()) updateSubscription(g.name)
     }
 
     private suspend fun autoSelect() {

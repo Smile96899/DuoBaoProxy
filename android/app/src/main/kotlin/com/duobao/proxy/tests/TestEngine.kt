@@ -64,11 +64,6 @@ class TestEngine(
 
     fun isRunning(id: Int, k: String) = "$id:$k" in _running.value
 
-    /** The × in the result-column header. */
-    fun clearShown() {
-        _shownKinds.value = emptyList()
-    }
-
     /**
      * Queues [kinds] for every node of [ids] the current engine supports. [quiet] runs in the
      * background without changing [shownKinds].

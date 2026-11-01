@@ -19,13 +19,6 @@ fun latText(ms: Int?): String = when {
     else -> "$ms ms"
 }
 
-/** Logo / status-dot colour for `off`, `on` and `tun`. */
-fun DbpColors.lookColor(look: String): Color = when (look) {
-    "tun" -> bad
-    "on" -> accent
-    else -> fg3
-}
-
 fun formatBytes(n: Long): String = when {
     n < 1024 -> "$n B"
     n < 1_048_576 -> String.format(Locale.ROOT, "%.1f KB", n / 1024.0)

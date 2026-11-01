@@ -114,14 +114,11 @@ QtObject {
     function reconnect() { if (connected) { pendingTests["reconnect"] = true; disconnect() } }
     function toggle() { connected ? disconnect() : connect() }
 
-    // ---- tests ------------------------------------------------------------
-    function testNode(id) { Tests.run([id], ["url"]) }
     // ---- node actions (right-click menu, detail column) ---------------------
     function connectNode(id) {
         selectNode(id)              // reconnects when already running
         if (selectedId === id && !connected) connect()
     }
-    function testNodes(ids) { Tests.run(ids, ["url"]) }
     function moveNodes(ids, group) { ids.forEach(id => store.updateNode(id, {group: group})); log("已移动 " + ids.length + " 个节点到「" + group + "」") }
     function removeNodes(ids) {
         if (ids.indexOf(selectedId) >= 0) { selectedId = -1; store.setUi("selected", -1) }
@@ -174,8 +171,6 @@ QtObject {
         sys.copyText(shareItems.map(i => i.link).join("\n"))
         log(shareItems.length > 1 ? "已复制 " + shareItems.length + " 条分享链接" : "已复制分享链接")
     }
-
-    function testAll() { Tests.run(store.nodes.map(e => e.id), ["url"]) }
 
     // ---- import -----------------------------------------------------------
     property string importGroup: "默认"

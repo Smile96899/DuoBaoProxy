@@ -57,15 +57,7 @@ object GoCore {
     val scope = CoroutineScope(SupervisorJob() + pool)
 
     private val setupDone = CompletableDeferred<Unit>()
-    private val _ready = MutableStateFlow(false)
-    private val _setupError = MutableStateFlow<String?>(null)
     private val _cores = MutableStateFlow<List<CoreInfo>>(emptyList())
-
-    /** True once `Setup` succeeded. */
-    val ready: StateFlow<Boolean> = _ready.asStateFlow()
-
-    /** The `Setup` error, if it failed (calls then throw it). */
-    val setupError: StateFlow<String?> = _setupError.asStateFlow()
 
     /** Engines and their protocols (`ListCoresJSON`), filled after `Setup`; drives `supports`. */
     val cores: StateFlow<List<CoreInfo>> = _cores.asStateFlow()
@@ -99,10 +91,8 @@ object GoCore {
                 Mobile.setup(o)
                 version = Mobile.version()
                 _cores.value = parseCores(Mobile.listCoresJSON())
-                _ready.value = true
                 setupDone.complete(Unit)
             } catch (e: Throwable) {
-                _setupError.value = e.message ?: e.toString()
                 LogRepository.log("核心初始化失败：${e.message}")
                 setupDone.completeExceptionally(e)
             }

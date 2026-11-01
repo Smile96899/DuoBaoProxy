@@ -11,7 +11,6 @@ Item {
     property bool compact: false
     property bool embedded: false        // inside the 路由 page, which has the title
     readonly property var apps: store.settings.apps || []
-    readonly property bool tunOn: (store.ui.mode === "tun") && App.coreHasTun
     readonly property bool supported: App.coreId === "sing-box"
 
     function setApps(list) { store.setSetting("apps", list) }
