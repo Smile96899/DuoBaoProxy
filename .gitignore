@@ -1,6 +1,6 @@
 # build outputs
-app/build/
-app/run/
+desktop/build/
+desktop/run/
 go/dist/
 *.exe
 *.dll
@@ -12,16 +12,16 @@ go/dist/
 aqtinstall.log
 
 # user data created when running from the source tree
-app/run/core.log
+desktop/run/core.log
 go/core.log
 cache.db
 
 # installer staging / downloads / output
-app/installer/stage/
-app/installer/cache/
-app/installer/output/
+desktop/installer/stage/
+desktop/installer/cache/
+desktop/installer/output/
 
 # gomobile build product (go/build_mobile.sh)
-mobile/android/app/libs/*.aar
-mobile/android/app/libs/*-sources.jar
-mobile/ios/Frameworks/
+android/app/libs/*.aar
+android/app/libs/*-sources.jar
+ios/Frameworks/

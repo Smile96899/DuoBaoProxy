@@ -6,7 +6,7 @@
 #   TARGET=ios ./build_mobile.sh      # iOS xcframework (macOS + Xcode only)
 #   VERSION=1.0.0 ./build_mobile.sh
 #
-# Android output: mobile/android/app/libs/dbcore.aar (Java package
+# Android output: android/app/libs/dbcore.aar (Java package
 # com.duobao.core.mobile). Needs gomobile/gobind in PATH or in
 # $(go env GOPATH)/bin, and ANDROID_HOME / ANDROID_NDK_HOME.
 set -e
@@ -43,7 +43,7 @@ android)
 
 	ANDROID_TARGET=android/arm64
 	[ -n "$DEBUG" ] && [ "$DEBUG" != 0 ] && ANDROID_TARGET=android/arm64,android/amd64
-	OUT="$ROOT/mobile/android/app/libs/dbcore.aar"
+	OUT="$ROOT/android/app/libs/dbcore.aar"
 	mkdir -p "$(dirname "$OUT")"
 	gomobile bind -v -target "$ANDROID_TARGET" -androidapi 29 -javapkg com.duobao.core \
 		-trimpath -tags "$TAGS" -ldflags "$LDFLAGS" -o "$OUT" ./mobile
@@ -53,7 +53,7 @@ ios)
 	# The Network Extension has ~50 MB: low-memory buffers, plus DHCP DNS
 	# as upstream does on Darwin. Needs macOS with Xcode.
 	[ "$(uname -s)" = Darwin ] || { echo "the iOS build needs macOS + Xcode" >&2; exit 1; }
-	OUT="$ROOT/mobile/ios/Frameworks/Dbcore.xcframework"
+	OUT="$ROOT/ios/Frameworks/Dbcore.xcframework"
 	mkdir -p "$(dirname "$OUT")"
 	gomobile bind -v -target ios,iossimulator -iosversion 15.0 -prefix DBC \
 		-trimpath -tags "$TAGS,with_low_memory,with_dhcp" -ldflags "$LDFLAGS" -o "$OUT" ./mobile

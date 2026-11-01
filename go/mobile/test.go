@@ -45,7 +45,7 @@ func URLTest(coreID, config, url string, timeoutMs int32) (int32, error) {
 }
 
 // Probe runs one named probe with the desktop's argument conventions
-// (app/qml/Tests.qml):
+// (desktop/qml/Tests.qml):
 //
 //	icmp     direct        address = host or host:port         -> Ms
 //	loss     direct        address = host:port, count (<=0: 10)  -> Ms = avg, Report {"avg","min","max","jitter","loss"}

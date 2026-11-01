@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - "mobile/ios/**"
+      - "ios/**"
       - "go/**"
       - ".github/workflows/ios.yml"
 
@@ -30,7 +30,7 @@ jobs:
         id: fwcache
         uses: actions/cache/restore@v4
         with:
-          path: mobile/ios/Frameworks/Dbcore.xcframework
+          path: ios/Frameworks/Dbcore.xcframework
           key: dbcore-${{ hashFiles('go/**/*.go', 'go/go.sum', 'go/build_mobile.sh') }}
 
       - name: Build Dbcore.xcframework
@@ -44,15 +44,15 @@ jobs:
         if: steps.fwcache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: mobile/ios/Frameworks/Dbcore.xcframework
+          path: ios/Frameworks/Dbcore.xcframework
           key: ${{ steps.fwcache.outputs.cache-primary-key }}
 
       - name: Generate Xcode project
-        working-directory: mobile/ios
+        working-directory: ios
         run: xcodegen
 
       - name: Build for the simulator (no signing)
-        working-directory: mobile/ios
+        working-directory: ios
         run: |
           set -o pipefail
           xcodebuild -project DuoBaoProxy.xcodeproj -scheme DuoBaoProxy             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator'             -derivedDataPath build CODE_SIGNING_ALLOWED=NO build 2>&1 | tee build.log | grep -E "error:|BUILD" || true
@@ -63,11 +63,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-log
-          path: mobile/ios/build.log
+          path: ios/build.log
           if-no-files-found: ignore
 
       - name: Screenshots on the simulator
-        working-directory: mobile/ios
+        working-directory: ios
         run: |
           APP=$(find build/Build/Products -path '*iphonesimulator*' -name DuoBaoProxy.app | head -1)
           UDID=$(xcrun simctl list devices available -j | python3 -c '
@@ -108,4 +108,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: screenshots
-          path: mobile/ios/shots
+          path: ios/shots

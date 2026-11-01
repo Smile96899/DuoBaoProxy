@@ -1,7 +1,7 @@
 <p align="right"><sub><a href="https://t.me/hyk857">关于开发者</a></sub></p>
 
 <p align="center">
-  <img src="app/res/logo.png" width="112" alt="多宝代理">
+  <img src="desktop/res/logo.png" width="112" alt="多宝代理">
 </p>
 
 <h1 align="center">多宝代理 DuoBao Proxy</h1>
@@ -160,7 +160,7 @@ gRPC 接口定义在 `go/rpc/gen/libcore.proto`：
 
 ## 界面内部
 
-代码在 `app/` 目录。
+代码在 `desktop/` 目录。
 
 | 位置 | 职责 |
 | :-- | :-- |
@@ -189,8 +189,8 @@ gRPC 接口定义在 `go/rpc/gen/libcore.proto`：
 | 脚本 | 产物 | 说明 |
 | :-- | :-- | :-- |
 | `go/build_core.sh` | `DuoBaoProxyCore.exe` | 带 `with_utls`、`with_quic`、`with_wireguard`、`with_gvisor` 等 tag 编译 |
-| `app/build.cmd` | `DuoBaoProxy.exe` | CMake + Ninja + MSVC |
-| `app/package.ps1` | 安装包 | 编译上面两者 → windeployqt 组装 → 附加运行库和 geo 数据 → 签名（可选）→ Inno Setup 打包 |
+| `desktop/build.cmd` | `DuoBaoProxy.exe` | CMake + Ninja + MSVC |
+| `desktop/package.ps1` | 安装包 | 编译上面两者 → windeployqt 组装 → 附加运行库和 geo 数据 → 签名（可选）→ Inno Setup 打包 |
 
 一键打包：
 
@@ -201,7 +201,7 @@ powershell -ExecutionPolicy Bypass -File package.ps1
 ```
 
 > [!IMPORTANT]
-> 版本号取自 `app/CMakeLists.txt` 的 `project(... VERSION x.y)`，打包时会注入界面、核心和安装包。
-> exe 文件属性里的版本号写在 `app/res/app.rc`，需要另外手动修改。
+> 版本号取自 `desktop/CMakeLists.txt` 的 `project(... VERSION x.y)`，打包时会注入界面、核心和安装包。
+> exe 文件属性里的版本号写在 `desktop/res/app.rc`，需要另外手动修改。
 
-依赖安装和分步构建见 [app/README.md](app/README.md)。
+依赖安装和分步构建见 [desktop/README.md](desktop/README.md)。

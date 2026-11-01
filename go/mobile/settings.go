@@ -65,7 +65,7 @@ func child(m map[string]any, key string) map[string]any {
 
 // PrepareSettings turns the stored settings object (data.json "settings")
 // into what RenderConfig expects, exactly as the desktop's
-// App.renderSettings() does (app/qml/App.qml:72-91):
+// App.renderSettings() does (desktop/qml/App.qml:72-91):
 //
 //   - proxyMode ("" means "global"): global clears the proxy/direct domain
 //     and IP lists and custom_rules and sets final=proxy; direct sets
